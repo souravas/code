@@ -190,7 +190,12 @@ matrix = [[0] * cols] * rows                # wrong! creates shallow copies
 # Adding elements
 arr.append(x)              # add to end
 arr.insert(i, x)           # insert at index i
-arr.extend([1, 2, 3])      # add multiple elements
+
+arr.extend([1, 2, 3])      # add multiple elements to single array
+[*arr, *arr_2]             # add multiple elements to single array
+[*arr[:i], *arr_2[i:]]     # add multiple elements to single array
+arr + arr_2[i:]            # add multiple elements to single array
+
 arr1 + arr2                # concatenate lists
 [*arr1, *arr2]             # unpack and concatenate
 
