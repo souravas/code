@@ -185,7 +185,16 @@ list(range(5))             # [0, 1, 2, 3, 4]
 
 # 2D arrays
 matrix = [[0] * cols for _ in range(rows)]  # correct way
+matrix = [[0] * 4 for _ in range(3)]
+# [
+#   [0, 0, 0, 0],
+#   [0, 0, 0, 0],
+#   [0, 0, 0, 0]
+# ]
+
 matrix = [[0] * cols] * rows                # wrong! creates shallow copies
+# mutating a single element changes elements in every row.
+
 
 # Adding elements
 arr.append(x)              # add to end
@@ -1950,6 +1959,9 @@ value = x if condition else y
 # Multiple assignment
 a, b = b, a  # swap
 x, y, *rest = sequence  # unpack with remainder
+a, b, c = (1, 2, 3) # unpack tuple
+a, b = [1, 2] # unpack array
+a, *b = [1, 2, 3, 4]
 
 # Default dictionary values
 count = {}
