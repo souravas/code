@@ -1,4 +1,4 @@
-#   🐍 Python Coding Interview Cheat Sheet
+# 🐍 Python Coding Interview Cheat Sheet
 
 A comprehensive Python reference for coding interviews, optimized for quick lookup and practical use.
 
@@ -605,13 +605,18 @@ def find_last(arr, target):
     return result
 
 ```
+
 #### The 2 Essential Binary Search Patterns
+
 1. You want an exact index or best candidate (≤ or ≥ target)?
-    - Use Pattern 1: while left <= right
+   - Use Pattern 1: while left <= right
 2. You want a boundary/first position where a condition flips (false → true or vice versa)?
-    - Use Pattern 2: while left < right
+   - Use Pattern 2: while left < right
+
 ##### Pattern 1: `while left <= right` (Classic Binary Search)
+
 ###### **Use case:** Finding an exact target OR tracking the best candidate seen so far
+
 ```python
 def binary_search_pattern1(nums, target):
     left = 0
@@ -632,18 +637,25 @@ def binary_search_pattern1(nums, target):
 
     return result  # Return tracked result or -1 if not found
 ```
+
 ###### **Key characteristics:**
+
 - Both pointers move **past** mid: `left = mid + 1` and `right = mid - 1`
 - Loop continues while valid range exists
 - Must track result separately if not finding exact match
 - After loop ends, pointers have crossed (`left > right`)
+
 ###### **Common problems:**
+
 - Standard binary search for a value
 - Search in rotated sorted array
 - Finding closest value ≤ or ≥ target (TimeMap problem)
 - Finding square root, or any "find largest X where condition holds"
+
 ##### Pattern 2: `while left < right` (Finding Boundaries)
+
 ###### **Use case:** Finding a position/boundary where a condition transitions
+
 ```python
 def binary_search_pattern2(nums):
     left = 0
@@ -659,12 +671,16 @@ def binary_search_pattern2(nums):
 
     return left  # left == right, this is your answer
 ```
+
 ###### **Key characteristics:**
+
 - One pointer includes mid: `right = mid` (never `right = mid - 1`)
 - Other pointer skips mid: `left = mid + 1` (never `left = mid` to avoid infinite loop)
 - Loop stops when `left == right` (converged to one position)
 - No need to track result separately, `left` is your answer
+
 ###### **Common problems:**
+
 - Find minimum in rotated sorted array
 - Find first/last occurrence of target
 - Find insertion position (lower_bound/upper_bound)
@@ -2027,4 +2043,4 @@ Remember: Practice regularly on platforms like LeetCode, and focus on understand
 
 ---
 
-*Happy coding! 🚀*
+_Happy coding! 🚀_
