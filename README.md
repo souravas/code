@@ -421,6 +421,8 @@ dq.clear()                # remove all elements
 ```python
 from collections import Counter
 
+# Instead of creating a dictionary and iterating through iterable to find the count of values, use Counter.
+
 # Creation
 c = Counter()                    # empty counter
 c = Counter([1, 2, 2, 3, 3, 3]) # Counter({3: 3, 2: 2, 1: 1})
@@ -461,6 +463,8 @@ dd = defaultdict(lambda: 'default')  # custom default value
 
 # Usage
 dd['new_key']               # automatically creates key with default value
+# don't use dd['key'] syntax for accessing keys as it automatically creates a new key with default value if it doesn't exist.
+# use 'key' in dd: syntax which returns True/False without modifying the dictionary
 dd.get('key')               # returns None, doesn't create key
 
 # Common pattern for grouping
