@@ -5,7 +5,7 @@ class Node:
         self.right = right
 
 
-def invert_binary_tree(tree: Node) -> Node:
+def invert_binary_tree(tree: Node | None) -> Node | None:
     if not tree:
         return tree
 
