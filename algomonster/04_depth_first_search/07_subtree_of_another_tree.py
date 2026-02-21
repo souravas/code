@@ -5,7 +5,7 @@ class Node:
         self.right = right
 
 
-def subtree_of_another_tree(root: Node, sub_root: Node) -> bool:
+def subtree_of_another_tree(root: Node | None, sub_root: Node) -> bool:
     def check_same(root, sub_root):
         if not root and not sub_root:
             return True
