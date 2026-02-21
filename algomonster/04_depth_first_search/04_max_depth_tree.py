@@ -5,7 +5,7 @@ class Node:
         self.right = right
 
 
-def tree_max_depth(root: Node) -> int:
+def tree_max_depth(root) -> int:
     if not root:
         return 0
 
