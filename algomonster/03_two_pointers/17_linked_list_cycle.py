@@ -10,7 +10,8 @@ def has_cycle(nodes: Node) -> bool:
 
     while fast and fast.next:
         fast = fast.next.next
-        slow = slow.next  # type: ignore
+        if slow:
+            slow = slow.next
         if fast == slow:
             return True
 

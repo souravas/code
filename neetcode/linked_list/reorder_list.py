@@ -11,7 +11,8 @@ class Solution:
         # fast.next.next is used instead of fast.
         # when even elements exist, we want first mid instead of second mid.
         while fast.next and fast.next.next:
-            slow = slow.next  # type: ignore
+            if slow:
+                slow = slow.next
             fast = fast.next.next
 
         prev, curr = None, slow
