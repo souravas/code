@@ -39,3 +39,24 @@ def deserialize(s):
         return current_node
 
     return dfs()
+
+
+def deserialize_with_iter(s):
+    # 1. Guard against empty strings up front
+    if not s:
+        return None
+
+    def dfs(nodes):
+        # 2. Provide a default value (None) to prevent StopIteration
+        val = next(nodes, None)
+
+        # 3. Handle the default value just like a null node
+        if val is None or val == "x":
+            return None
+
+        cur = Node(int(val))
+        cur.left = dfs(nodes)
+        cur.right = dfs(nodes)
+        return cur
+
+    return dfs(iter(s.split()))
