@@ -11,11 +11,13 @@ def decode_ways(digits: str) -> int:
         ways = 0
         ways += dfs(index + 1)
 
-        if digits[index] == "1":
+        # if digits[index] == "1":
+        #     ways += dfs(index + 2)
+        # if digits[index] == "2" and index < (len(digits) - 1):
+        #     if int(digits[index + 1]) < 7:
+        #         ways += dfs(index + 2)
+        if 10 <= int(digits[index : (index + 2)]) <= 26:
             ways += dfs(index + 2)
-        if digits[index] == "2" and index < (len(digits) - 1):
-            if int(digits[index + 1]) < 7:
-                ways += dfs(index + 2)
         memo[index] = ways
         return memo[index]
 
