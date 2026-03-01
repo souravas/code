@@ -392,6 +392,8 @@ from collections import deque
 # Creation
 dq = deque()              # empty deque
 dq = deque([1, 2, 3])     # deque from list
+dq = deque([(row, col)])  # deque from list of tuples (row,col).
+# deque((1, 2)) results in a queue that looks like this: deque([1, 2]), which is integers instead of tuples.
 dq = deque(maxlen=5)      # bounded deque
 
 # Adding elements
