@@ -340,7 +340,7 @@ d1 | d2                  # merge two dicts (Python 3.9+)
 ```python
 # Creation
 t = ()                     # empty tuple
-t = (1,)                   # single element tuple (comma required)
+t = (1,)                   # single element tuple (comma required). otherwise, it will be an integer.
 t = (1, 2, 3)             # multiple elements
 t = 1, 2, 3               # tuple packing
 
