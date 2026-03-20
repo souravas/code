@@ -16,6 +16,7 @@ A comprehensive Python reference for coding interviews, optimized for quick look
   - [Tuples](#tuples)
   - [Stacks](#stacks)
   - [Deques](#deques)
+  - [Linked Lists](#linked-lists)
 - [Advanced Collections](#advanced-collections)
   - [Counter](#counter)
   - [DefaultDict](#defaultdict)
@@ -413,6 +414,36 @@ dq.reverse()              # reverse in-place
 dq.clear()                # remove all elements
 
 # Useful for BFS and sliding window problems
+```
+
+### Linked Lists
+
+```python
+# Singly Linked List Node
+class ListNode:
+    def __init__(self, val=0, next=None):
+        self.val = val
+        self.next = next
+
+# Creation
+node = ListNode(1)                  # single node with value 1
+node = ListNode(1, ListNode(2))     # 1 -> 2
+
+# Traversal
+current = head
+while current:
+    print(current.val)
+    current = current.next
+
+# Access / modify
+head.val                            # value of first node
+head.next                           # next node (or None)
+head.next = some_node               # point to a different node
+
+# Dummy node pattern — use when the head itself might be removed/changed
+dummy = ListNode(0, head)
+# ... operations on dummy.next ...
+return dummy.next                   # new head
 ```
 
 ---
@@ -2132,6 +2163,13 @@ class Direction(Enum):
 # Iterate with index
 for i, value in enumerate(items):
     print(f"Index {i}: {value}")
+
+# Enumerate with custom start index (default is 0)
+for i, value in enumerate(items, 1):   # start counting from 1
+    print(f"Item {i}: {value}")
+
+# Enumerate for building index maps (very common pattern)
+index_map = {val: i for i, val in enumerate(items)}  # value → index
 
 # Iterate over multiple sequences
 for name, age, city in zip(names, ages, cities):
