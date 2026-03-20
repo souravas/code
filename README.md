@@ -42,6 +42,7 @@ A comprehensive Python reference for coding interviews, optimized for quick look
   - [Comprehensions](#comprehensions)
   - [Generators](#generators)
   - [Lambda Functions](#lambda-functions)
+  - [Scope: global & nonlocal](#scope-global--nonlocal)
   - [Classes](#classes)
 - [Best Practices](#best-practices)
 
@@ -1703,6 +1704,175 @@ print(power(5, 3)) # 125
 
 # Limitations: only expressions, no statements
 # No assignments, no print statements, no return statements
+```
+
+### Scope: `global` & `nonlocal`
+
+```python
+# Python has 4 scopes (LEGB rule):
+# L - Local: inside the current function
+# E - Enclosing: inside enclosing (outer) functions
+# G - Global: module-level (top of the file)
+# B - Built-in: Python's built-in names (len, print, etc.)
+
+# Python looks up variables in this order: Local → Enclosing → Global → Built-in
+```
+
+#### `global`
+
+```python
+# Use `global` to read AND modify a module-level variable from inside a function.
+# Without `global`, assigning to a variable inside a function creates a new local variable.
+
+count = 0  # global variable
+
+def increment():
+    global count          # declare intent to use the global variable
+    count += 1            # modifies the global `count`
+
+increment()
+print(count)              # 1
+
+# Without `global`, this raises UnboundLocalError:
+def broken_increment():
+    count += 1            # UnboundLocalError: local variable 'count' referenced before assignment
+
+# Reading a global variable does NOT require the `global` keyword
+name = "Alice"
+
+def greet():
+    print(name)           # works fine — just reading, no assignment
+
+# Rule of thumb:
+# - Reading global variable → no keyword needed
+# - Modifying (assigning to) global variable → need `global`
+```
+
+#### `nonlocal`
+
+```python
+# Use `nonlocal` to read AND modify a variable from an enclosing (outer) function.
+# This is essential for closures and nested functions — very common in interview problems.
+
+def outer():
+    count = 0             # enclosing variable
+
+    def inner():
+        nonlocal count    # declare intent to modify enclosing variable
+        count += 1
+
+    inner()
+    print(count)          # 1
+
+outer()
+
+# Without `nonlocal`, this raises UnboundLocalError:
+def broken_outer():
+    count = 0
+
+    def inner():
+        count += 1        # UnboundLocalError
+
+    inner()
+```
+
+#### Common Interview Patterns Using `nonlocal`
+
+```python
+# Pattern 1: DFS / Backtracking with a shared counter or result
+def max_path_sum(root):
+    result = float('-inf')
+
+    def dfs(node):
+        nonlocal result
+        if not node:
+            return 0
+        left = max(dfs(node.left), 0)
+        right = max(dfs(node.right), 0)
+        result = max(result, node.val + left + right)
+        return node.val + max(left, right)
+
+    dfs(root)
+    return result
+
+# Pattern 2: Closure-based counter
+def make_counter():
+    count = 0
+
+    def increment():
+        nonlocal count
+        count += 1
+        return count
+
+    return increment
+
+counter = make_counter()
+print(counter())          # 1
+print(counter())          # 2
+
+# Pattern 3: Tracking state across recursive calls (e.g., diameter of tree)
+def diameter_of_binary_tree(root):
+    diameter = 0
+
+    def depth(node):
+        nonlocal diameter
+        if not node:
+            return 0
+        left = depth(node.left)
+        right = depth(node.right)
+        diameter = max(diameter, left + right)
+        return 1 + max(left, right)
+
+    depth(root)
+    return diameter
+```
+
+#### The Mutable Container Workaround
+
+```python
+# You can AVOID `nonlocal` by using a mutable container (list, dict, object).
+# Mutating the contents of a mutable object doesn't count as reassignment.
+
+def outer():
+    count = [0]           # list is mutable
+
+    def inner():
+        count[0] += 1     # mutating the list's element, not reassigning `count`
+
+    inner()
+    print(count[0])       # 1
+
+# This works because:
+# count[0] += 1  → mutates the existing list object (allowed without nonlocal)
+# count += 1     → reassigns the variable `count` itself (needs nonlocal)
+
+# Same trick with a dictionary
+def outer_dict():
+    state = {'count': 0}
+
+    def inner():
+        state['count'] += 1  # mutating dict contents — no nonlocal needed
+
+    inner()
+    print(state['count'])    # 1
+
+# Recommendation: prefer `nonlocal` over mutable container hacks — it's more readable.
+```
+
+#### Quick Reference
+
+```python
+# global vs nonlocal summary:
+#
+# Keyword     | Refers to              | Use when
+# ----------- | ---------------------- | -----------------------------------------
+# global      | Module-level variable  | Modifying a top-level variable from any function
+# nonlocal    | Enclosing function var | Modifying an outer function's variable from a nested function
+#
+# Neither keyword is needed just for READING a variable — only for REASSIGNMENT.
+#
+# Common mistake: forgetting `nonlocal` in DFS/backtracking helpers that
+# update a shared variable like `result`, `max_val`, `count`, etc.
 ```
 
 ### Classes
