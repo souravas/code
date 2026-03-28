@@ -17,12 +17,12 @@ def lcs(s1, s2):
     return solve(len(s1), len(s2))
 
 
-from functools import lru_cache
+from functools import cache
 
 
 def lcs_improved(s1, s2):
 
-    @lru_cache(maxsize=None)
+    @cache
     def solve(i, j):
         if i == 0 or j == 0:
             return 0
