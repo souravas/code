@@ -11,11 +11,14 @@ Algorithm templates and patterns. For syntax lookups, see [CHEATSHEET.md](CHEATS
 - [Sliding Window](#sliding-window)
 - [Prefix Sum](#prefix-sum)
 - [Monotonic Stack](#monotonic-stack)
+- [Heap / Top-K](#heap--top-k)
+- [Quickselect](#quickselect)
 - [Intervals](#intervals)
 - [Greedy](#greedy)
 - [Backtracking](#backtracking)
 - [Dynamic Programming](#dynamic-programming)
 - [Bit Manipulation](#bit-manipulation)
+- [Math / Number Theory](#math--number-theory)
 - [Linked Lists](#linked-lists)
 - [Trees](#trees)
 - [Binary Search Trees](#binary-search-trees)
@@ -23,6 +26,7 @@ Algorithm templates and patterns. For syntax lookups, see [CHEATSHEET.md](CHEATS
 - [Graphs](#graphs)
 - [Trie](#trie)
 - [Union-Find](#union-find)
+- [LRU Cache](#lru-cache)
 
 ---
 
@@ -450,6 +454,140 @@ def max_sliding_window(nums, k):
 
 ---
 
+## Heap / Top-K
+
+Min-heap of size K is the canonical "top K" trick: O(n log k) and uses O(k) memory — beats both sorting (O(n log n)) and a full heap (O(n) memory).
+
+```python
+import heapq
+
+# Top K largest — use a MIN-heap of size K (keep the K biggest seen)
+def top_k_largest(nums, k):
+    heap = []
+    for x in nums:
+        heapq.heappush(heap, x)
+        if len(heap) > k:
+            heapq.heappop(heap)         # evict the smallest in the heap
+    return heap                          # K largest (unsorted)
+
+# Top K smallest — use a MAX-heap of size K (negate values)
+def top_k_smallest(nums, k):
+    heap = []
+    for x in nums:
+        heapq.heappush(heap, -x)
+        if len(heap) > k:
+            heapq.heappop(heap)
+    return [-x for x in heap]
+
+# Built-ins — fine for small k, but allocate a fresh structure
+heapq.nlargest(k, nums)
+heapq.nsmallest(k, nums)
+
+# K Closest Points to Origin — max-heap of size K by distance
+def k_closest(points, k):
+    heap = []
+    for x, y in points:
+        d = -(x*x + y*y)                 # negate for max-heap
+        if len(heap) < k:
+            heapq.heappush(heap, (d, x, y))
+        else:
+            heapq.heappushpop(heap, (d, x, y))
+    return [[x, y] for _, x, y in heap]
+
+# Merge K Sorted Lists — heap holds the current head of each list
+def merge_k_lists(lists):
+    heap = []
+    for i, node in enumerate(lists):
+        if node:
+            heapq.heappush(heap, (node.val, i, node))   # i breaks ties
+    dummy = tail = ListNode()
+    while heap:
+        _, i, node = heapq.heappop(heap)
+        tail.next = node
+        tail = tail.next
+        if node.next:
+            heapq.heappush(heap, (node.next.val, i, node.next))
+    return dummy.next
+
+# Find Median from Data Stream — two heaps, balanced sizes
+class MedianFinder:
+    def __init__(self):
+        self.lo = []      # max-heap (store negated)  — lower half
+        self.hi = []      # min-heap                   — upper half
+
+    def add(self, num):
+        heapq.heappush(self.lo, -num)
+        heapq.heappush(self.hi, -heapq.heappop(self.lo))   # funnel through lo→hi
+        if len(self.hi) > len(self.lo):
+            heapq.heappush(self.lo, -heapq.heappop(self.hi))
+
+    def median(self):
+        if len(self.lo) > len(self.hi):
+            return -self.lo[0]
+        return (-self.lo[0] + self.hi[0]) / 2
+
+# Task Scheduler — greedy with max-heap of remaining counts
+def least_interval(tasks, n):
+    from collections import Counter, deque
+    counts = Counter(tasks)
+    heap = [-c for c in counts.values()]
+    heapq.heapify(heap)
+    cooldown = deque()                  # (-count, ready_time)
+    time = 0
+    while heap or cooldown:
+        time += 1
+        if heap:
+            c = heapq.heappop(heap) + 1
+            if c < 0:
+                cooldown.append((c, time + n))
+        if cooldown and cooldown[0][1] == time:
+            heapq.heappush(heap, cooldown.popleft()[0])
+    return time
+```
+
+**When to reach for it:** top-K, k-closest, k-th order statistic in a stream, merging k streams, sliding-window median, scheduling.
+
+---
+
+## Quickselect
+
+Find the kth order statistic in **O(n) average** without sorting. Same partition step as quicksort, but recurse into one side only.
+
+```python
+import random
+
+def quickselect(arr, k):
+    """Return the kth smallest element (1-indexed). Mutates arr."""
+    def partition(lo, hi):
+        # Randomized pivot avoids O(n²) on sorted/adversarial inputs
+        p = random.randint(lo, hi)
+        arr[p], arr[hi] = arr[hi], arr[p]
+        pivot = arr[hi]
+        store = lo
+        for i in range(lo, hi):
+            if arr[i] < pivot:
+                arr[i], arr[store] = arr[store], arr[i]
+                store += 1
+        arr[store], arr[hi] = arr[hi], arr[store]
+        return store
+
+    target = k - 1
+    lo, hi = 0, len(arr) - 1
+    while lo <= hi:
+        p = partition(lo, hi)
+        if p == target: return arr[p]
+        elif p < target: lo = p + 1
+        else: hi = p - 1
+
+# Kth Largest Element — call quickselect with k = len(arr) - k + 1
+def find_kth_largest(nums, k):
+    return quickselect(nums, len(nums) - k + 1)
+```
+
+**When to reach for it:** "kth largest/smallest" when an in-place O(n) average solution beats the O(n log k) heap. Note: worst-case O(n²) — use heap if you need a guarantee.
+
+---
+
 ## Intervals
 
 Almost always: **sort by start**, then sweep.
@@ -802,6 +940,61 @@ def change(amount, coins):
     return dp[amount]
 ```
 
+### Word Break
+
+```python
+def word_break(s, word_dict):
+    words = set(word_dict)
+    n = len(s)
+    dp = [False] * (n + 1)             # dp[i] = can s[:i] be segmented?
+    dp[0] = True
+    for i in range(1, n + 1):
+        for j in range(i):
+            if dp[j] and s[j:i] in words:
+                dp[i] = True
+                break
+    return dp[n]
+```
+
+### Longest Palindromic Subsequence
+
+```python
+def longest_palindrome_subseq(s):
+    n = len(s)
+    dp = [[0] * n for _ in range(n)]
+    for i in range(n):
+        dp[i][i] = 1                   # single chars are palindromes of length 1
+    for length in range(2, n + 1):
+        for i in range(n - length + 1):
+            j = i + length - 1
+            if s[i] == s[j]:
+                dp[i][j] = (dp[i + 1][j - 1] if length > 2 else 0) + 2
+            else:
+                dp[i][j] = max(dp[i + 1][j], dp[i][j - 1])
+    return dp[0][n - 1]
+```
+
+### Palindrome Partitioning — Min Cuts
+
+```python
+def min_cut(s):
+    n = len(s)
+    # Precompute: is_pal[i][j] = True iff s[i:j+1] is a palindrome
+    is_pal = [[False] * n for _ in range(n)]
+    for i in range(n - 1, -1, -1):
+        for j in range(i, n):
+            if s[i] == s[j] and (j - i < 2 or is_pal[i + 1][j - 1]):
+                is_pal[i][j] = True
+
+    cuts = [0] * n
+    for i in range(n):
+        if is_pal[0][i]:
+            cuts[i] = 0
+        else:
+            cuts[i] = min(cuts[j] + 1 for j in range(i) if is_pal[j + 1][i])
+    return cuts[n - 1]
+```
+
 ---
 
 ## Bit Manipulation
@@ -844,6 +1037,59 @@ def all_subsets(nums):
     n = len(nums)
     return [[nums[i] for i in range(n) if mask & (1 << i)]
             for mask in range(1 << n)]
+```
+
+---
+
+## Math / Number Theory
+
+```python
+# Sieve of Eratosthenes — all primes ≤ n in O(n log log n)
+def sieve(n):
+    is_prime = [True] * (n + 1)
+    is_prime[0] = is_prime[1] = False
+    for i in range(2, int(n**0.5) + 1):
+        if is_prime[i]:
+            for j in range(i * i, n + 1, i):   # start at i*i — smaller multiples already marked
+                is_prime[j] = False
+    return [i for i, p in enumerate(is_prime) if p]
+
+# Check primality — trial division to √n
+def is_prime(n):
+    if n < 2: return False
+    if n < 4: return True
+    if n % 2 == 0: return False
+    for i in range(3, int(n**0.5) + 1, 2):
+        if n % i == 0: return False
+    return True
+
+# Prime factorization
+def prime_factors(n):
+    factors = []
+    d = 2
+    while d * d <= n:
+        while n % d == 0:
+            factors.append(d)
+            n //= d
+        d += 1
+    if n > 1:
+        factors.append(n)
+    return factors
+
+# GCD / LCM
+import math
+math.gcd(12, 18)            # 6
+math.lcm(4, 6)              # 12 (Python 3.9+)
+
+# Fast modular exponentiation — a^b mod m in O(log b)
+pow(2, 10, 1000)            # built-in 3-arg pow
+
+# Modular inverse — when m is prime, use Fermat's little theorem: a^(m-2) mod m
+def mod_inverse(a, m):
+    return pow(a, m - 2, m)
+
+# Common mod for combinatorics problems
+MOD = 10**9 + 7
 ```
 
 ---
@@ -1197,6 +1443,8 @@ def dfs_iter(graph, start):
     return visited
 
 # BFS — shortest path in unweighted graph
+# Critical: mark visited when you ENQUEUE, not when you dequeue.
+# Otherwise the same node gets pushed multiple times and complexity blows up.
 def bfs(graph, start):
     from collections import deque
     visited = {start}
@@ -1205,9 +1453,31 @@ def bfs(graph, start):
         node = queue.popleft()
         for n in graph[node]:
             if n not in visited:
-                visited.add(n)
+                visited.add(n)               # mark on enqueue
                 queue.append(n)
     return visited
+
+# Multi-source BFS — seed the queue with ALL sources before the main loop.
+# Common problems: Rotting Oranges, Walls and Gates, 01 Matrix, Shortest Path from any X.
+def multi_source_bfs(grid, sources):
+    """Returns dist[r][c] = min distance from any source, or -1 if unreachable."""
+    from collections import deque
+    rows, cols = len(grid), len(grid[0])
+    dist = [[-1] * cols for _ in range(rows)]
+    queue = deque()
+
+    for r, c in sources:                     # seed all sources at distance 0
+        dist[r][c] = 0
+        queue.append((r, c))
+
+    while queue:
+        r, c = queue.popleft()
+        for dr, dc in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
+            nr, nc = r + dr, c + dc
+            if 0 <= nr < rows and 0 <= nc < cols and dist[nr][nc] == -1:
+                dist[nr][nc] = dist[r][c] + 1
+                queue.append((nr, nc))
+    return dist
 
 # Topological Sort (Kahn's algorithm)
 def topological_sort(graph):
@@ -1231,6 +1501,8 @@ def topological_sort(graph):
     return result if len(result) == len(in_degree) else []   # [] = cycle
 
 # Dijkstra's (non-negative weights)
+# Format note: this assumes graph[node] is a {neighbor: weight} dict.
+# The BFS/DFS examples above use graph[node] as a list of neighbors — adjust accordingly.
 def dijkstra(graph, start):
     import heapq
     distances = {node: float('inf') for node in graph}
@@ -1245,6 +1517,26 @@ def dijkstra(graph, start):
                 distances[neighbor] = nd
                 heapq.heappush(pq, (nd, neighbor))
     return distances
+
+# 0-1 BFS — shortest path when every edge weight is 0 or 1. O(V + E), no heap.
+# Trick: weight-0 edges go to the FRONT of the deque, weight-1 to the back.
+def zero_one_bfs(graph, start):
+    """graph[node] = list of (neighbor, weight) where weight ∈ {0, 1}."""
+    from collections import deque
+    dist = {node: float('inf') for node in graph}
+    dist[start] = 0
+    dq = deque([start])
+    while dq:
+        node = dq.popleft()
+        for neighbor, w in graph[node]:
+            nd = dist[node] + w
+            if nd < dist[neighbor]:
+                dist[neighbor] = nd
+                if w == 0:
+                    dq.appendleft(neighbor)           # free move — process next
+                else:
+                    dq.append(neighbor)
+    return dist
 
 # Cycle in directed graph — DFS with 3 colors
 def has_cycle_directed(graph):
@@ -1360,3 +1652,84 @@ def count_components(n, edges):
 ```
 
 **When to reach for Union-Find:** connectivity queries, dynamic component counting, cycle detection in undirected graphs, Kruskal's MST.
+
+---
+
+## LRU Cache
+
+Classic design question. Two implementations — pick based on whether you're allowed `OrderedDict`.
+
+### Easy version — OrderedDict
+
+```python
+from collections import OrderedDict
+
+class LRUCache:
+    def __init__(self, capacity):
+        self.cap = capacity
+        self.cache = OrderedDict()
+
+    def get(self, key):
+        if key not in self.cache:
+            return -1
+        self.cache.move_to_end(key)             # mark as most recently used
+        return self.cache[key]
+
+    def put(self, key, value):
+        if key in self.cache:
+            self.cache.move_to_end(key)
+        self.cache[key] = value
+        if len(self.cache) > self.cap:
+            self.cache.popitem(last=False)       # evict the oldest (LRU)
+```
+
+### From scratch — hash map + doubly-linked list
+
+Interviewers often disallow `OrderedDict`. Build it yourself: dict for O(1) lookup, DLL for O(1) reorder/evict.
+
+```python
+class Node:
+    def __init__(self, key=0, val=0):
+        self.key, self.val = key, val
+        self.prev = self.next = None
+
+class LRUCache:
+    def __init__(self, capacity):
+        self.cap = capacity
+        self.cache = {}                          # key → Node
+        # Sentinel head/tail simplify edge cases (no None checks on neighbors)
+        self.head, self.tail = Node(), Node()
+        self.head.next = self.tail
+        self.tail.prev = self.head
+
+    def _remove(self, node):
+        node.prev.next = node.next
+        node.next.prev = node.prev
+
+    def _add_to_front(self, node):
+        node.next = self.head.next
+        node.prev = self.head
+        self.head.next.prev = node
+        self.head.next = node
+
+    def get(self, key):
+        if key not in self.cache:
+            return -1
+        node = self.cache[key]
+        self._remove(node)
+        self._add_to_front(node)                  # most recently used → front
+        return node.val
+
+    def put(self, key, value):
+        if key in self.cache:
+            self._remove(self.cache[key])
+        node = Node(key, value)
+        self.cache[key] = node
+        self._add_to_front(node)
+        if len(self.cache) > self.cap:
+            lru = self.tail.prev                  # evict from tail (least recent)
+            self._remove(lru)
+            del self.cache[lru.key]
+```
+
+**Variants:** LFU cache (frequency + recency, harder), TTL cache (add expiration), thread-safe LRU (add a lock).

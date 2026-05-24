@@ -18,10 +18,14 @@ Pure syntax and idioms for fast lookup. For algorithm templates (binary search, 
 - [Tree Node](#tree-node)
 - [Counter](#counter)
 - [DefaultDict](#defaultdict)
+- [OrderedDict](#ordereddict)
 - [Heapq](#heapq)
 - [Math](#math)
+- [String Module](#string-module)
+- [Random](#random)
 - [Itertools](#itertools)
 - [Bisect](#bisect)
+- [SortedContainers](#sortedcontainers)
 - [Functools](#functools)
 - [Comprehensions](#comprehensions)
 - [Generators](#generators)
@@ -54,6 +58,10 @@ len(stack) == 0  # explicit length check
 # Walrus operator (Python 3.8+) — assign within expression
 while (line := input()):
     process(line)
+
+# Raise Python's recursion limit (default ~1000) — needed for deep DFS / DP
+import sys
+sys.setrecursionlimit(10**6)
 ```
 
 ---
@@ -80,6 +88,14 @@ math.fmod(-10, 3) # -1.0 (correct modulo towards zero)
 
 # Bounds
 float('inf'), float('-inf')
+
+# Base conversions
+int("ff", 16)           # 255 — parse from base 16
+int("1010", 2)          # 10  — parse from base 2
+bin(10)                 # '0b1010'
+oct(10)                 # '0o12'
+hex(255)                # '0xff'
+bin(10)[2:]             # '1010' (drop the '0b' prefix)
 ```
 
 ---
@@ -223,6 +239,11 @@ arr[:end]
 arr[start:end:step]
 arr[::-1]                  # reverse
 arr[::2]                   # every other element
+
+# Slice assignment — replace a slice with an iterable of any length
+arr[1:3] = [9, 9, 9]       # length can differ; list resizes
+arr[1:3] = []              # delete slice
+arr[:] = sorted(arr)       # replace contents in-place (preserves aliases)
 ```
 
 ---
@@ -426,14 +447,17 @@ c.most_common()              # all, most common first
 c.most_common(2)             # top 2
 
 # Operations
-c1 + c2                      # add counts
-c1 - c2                      # subtract (keeps positive only)
+c1 + c2                      # add counts (drops zero/negative results)
+c1 - c2                      # subtract — DROPS zero/negative results
 c1 & c2                      # intersection (min counts)
 c1 | c2                      # union (max counts)
 
+# Gotcha: c1 - c2 is NOT signed subtraction. For signed counts use .subtract():
+#   c = Counter(a=1); c.subtract(Counter(a=3)); c  → Counter({'a': -2})
+
 # Mutation
 c.update(other)              # add counts in-place
-c.subtract(other)            # subtract in-place
+c.subtract(other)            # subtract in-place (keeps signed counts)
 
 # Convert
 list(c.elements())           # list with repeats
@@ -459,6 +483,32 @@ dd = defaultdict(lambda: 'x')  # custom default
 groups = defaultdict(list)
 for item in items:
     groups[get_group(item)].append(item)
+```
+
+---
+
+## OrderedDict
+
+```python
+from collections import OrderedDict
+
+# Regular dicts preserve insertion order since Python 3.7, but OrderedDict
+# adds two LRU-critical operations: move_to_end and popitem(last=False).
+
+od = OrderedDict()
+od['a'] = 1
+od['b'] = 2
+od['c'] = 3
+
+# Move existing key to most-recent / least-recent position
+od.move_to_end('a')              # 'a' is now most recent: a → end
+od.move_to_end('a', last=False)  # 'a' is now least recent: a → front
+
+# Pop from either end
+od.popitem()                     # remove and return MOST recent (last=True)
+od.popitem(last=False)           # remove and return LEAST recent — LRU eviction
+
+# Common pattern: LRU cache primitive (full template in PATTERNS.md → LRU Cache)
 ```
 
 ---
@@ -533,6 +583,57 @@ math.nan
 math.isnan(x), math.isinf(x), math.isfinite(x)
 ```
 
+For Sieve of Eratosthenes, modular exponentiation, etc., see [PATTERNS.md → Math / Number Theory](PATTERNS.md#math--number-theory).
+
+---
+
+## String Module
+
+```python
+import string
+
+# Pre-built character sets — useful for membership checks and alphabet iteration
+string.ascii_lowercase     # 'abcdefghijklmnopqrstuvwxyz'
+string.ascii_uppercase     # 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+string.ascii_letters       # both lower + upper
+string.digits              # '0123456789'
+string.hexdigits           # '0123456789abcdefABCDEF'
+string.octdigits           # '01234567'
+string.punctuation         # !"#$%&'()*+,-./:;<=>?@[\]^_`{|}~
+string.whitespace          # ' \t\n\r\x0b\x0c'
+string.printable           # digits + letters + punctuation + whitespace
+
+# Common uses
+for c in string.ascii_lowercase:       # iterate alphabet
+    ...
+
+vowels = set("aeiou")
+consonants = set(string.ascii_lowercase) - vowels
+
+if c in string.digits:                 # faster than c.isdigit() in tight loops
+    ...
+```
+
+---
+
+## Random
+
+```python
+import random
+
+random.random()                  # float in [0.0, 1.0)
+random.uniform(1.0, 5.0)         # float in [1.0, 5.0]
+random.randint(1, 10)            # int in [1, 10] — both ends INCLUSIVE
+random.randrange(10)             # int in [0, 10) — like range()
+random.choice([1, 2, 3])         # one random element
+random.choices(pop, k=3)         # k elements WITH replacement
+random.choices(pop, weights=[1, 2, 3], k=1)   # weighted sample
+random.sample(pop, k=3)          # k elements WITHOUT replacement
+random.shuffle(arr)              # in-place shuffle
+
+random.seed(42)                  # reproducibility (tests, debugging)
+```
+
 ---
 
 ## Itertools
@@ -586,6 +687,28 @@ bisect.insort(arr, 4)         # same as insort_right
 
 # Custom key (Python 3.10+)
 bisect.bisect_left(data, 4, key=lambda x: x[0])
+```
+
+---
+
+## SortedContainers
+
+```python
+# Third-party, but pre-installed on LeetCode / HackerRank.
+# Fills the gap bisect + list can't: O(log n) add/remove (insort is O(n) due to list shift).
+from sortedcontainers import SortedList, SortedDict, SortedSet
+
+sl = SortedList([3, 1, 4, 1, 5])  # stays sorted: [1, 1, 3, 4, 5]
+sl.add(2)                          # O(log n)
+sl.remove(1)                       # O(log n) — first occurrence
+sl.discard(99)                     # no error if missing
+sl[0], sl[-1]                      # O(log n) indexed access (min / max)
+sl.bisect_left(3), sl.bisect_right(3)
+sl.pop(0)                          # O(log n) — remove smallest
+sl.irange(2, 4)                    # iterate values in [2, 4] inclusive
+
+# When to reach for it: sliding-window median, calendar/booking problems,
+# any "maintain a sorted multiset with frequent insert/delete" pattern.
 ```
 
 ---

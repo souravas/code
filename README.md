@@ -13,11 +13,12 @@ Two companion documents for coding interview prep:
 
 Syntax-only, one-liners, no algorithms.
 
-- Basic types: integers, strings, booleans
+- Basic types: integers (incl. base conversion), strings, booleans
 - Built-in data structures: lists, sets, dicts, tuples, stacks, deques
 - Node skeletons for linked lists and trees
-- `collections`: Counter, defaultdict, deque
-- `heapq`, `math`, `itertools`, `bisect`, `functools`
+- `collections`: Counter, defaultdict, OrderedDict, deque
+- `heapq`, `math`, `string`, `random`, `itertools`, `bisect`, `functools`
+- `sortedcontainers` (SortedList / SortedDict / SortedSet)
 - Comprehensions, generators, lambdas
 - Scope (`global` / `nonlocal`)
 - Classes (essentials only — `__init__`, `__str__`, `__eq__`, `__lt__`, `@property`, inheritance)
@@ -31,9 +32,11 @@ Algorithm templates — full implementations you can adapt.
 - **Searching:** Binary Search (both patterns), Binary Search on Answer
 - **Two-pointer family:** Two Pointers, Fast & Slow Pointers, Sliding Window
 - **Array tricks:** Prefix Sum (1D & 2D), Monotonic Stack, Intervals
+- **Top-K:** Heap (top-K, k-closest, merge-K, median of stream), Quickselect
 - **Strategies:** Greedy, Backtracking, Dynamic Programming
-- **Bits:** Bit Manipulation
-- **Data structures:** Linked Lists, Trees, BSTs, Matrix, Graphs, Trie, Union-Find
+- **Bits & math:** Bit Manipulation, Math / Number Theory (sieve, modpow)
+- **Data structures:** Linked Lists, Trees, BSTs, Matrix, Graphs (incl. multi-source BFS, 0-1 BFS), Trie, Union-Find
+- **Design:** LRU Cache (OrderedDict + from-scratch DLL versions)
 
 ---
 
@@ -47,7 +50,7 @@ Algorithm templates — full implementations you can adapt.
 
 ### Patterns to drill
 
-Two pointers · Sliding window · Binary search · DFS/BFS · Dynamic programming · Backtracking · Monotonic stack · Prefix sum · Intervals · Union-Find
+Two pointers · Sliding window · Binary search · DFS/BFS · Dynamic programming · Backtracking · Monotonic stack · Heap / top-K · Prefix sum · Intervals · Union-Find
 
 ---
 
