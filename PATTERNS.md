@@ -50,6 +50,25 @@ from collections import Counter
 top_k = [item for item, _ in Counter(arr).most_common(k)]
 ```
 
+### Custom comparator with `cmp_to_key`
+
+Use when ordering depends on a relationship between two items and can't be expressed as a single key function.
+
+```python
+from functools import cmp_to_key
+
+# Largest Number — arrange digits so the concatenation is the largest possible.
+# E.g. [3, 30, 34, 5, 9] → "9534330" (because "3" + "30" > "30" + "3", etc.)
+def largest_number(nums):
+    arr = [str(x) for x in nums]
+    def compare(a, b):
+        if a + b > b + a: return -1   # a should come first
+        if a + b < b + a: return 1
+        return 0
+    arr.sort(key=cmp_to_key(compare))
+    return ''.join(arr).lstrip('0') or '0'
+```
+
 **When to reach for it:** any problem that says "sorted" or where order unlocks a two-pointer / greedy / binary-search approach.
 
 ---
@@ -223,6 +242,24 @@ def max_area(height):
         else:
             right -= 1
     return best
+
+# Trapping Rain Water — O(n) time, O(1) space
+# Water above i depends on min(max_left, max_right). Advance the smaller side:
+# its max is the binding constraint, so we know how much water stacks above it.
+def trap(height):
+    left, right = 0, len(height) - 1
+    left_max = right_max = 0
+    total = 0
+    while left < right:
+        if height[left] < height[right]:
+            left_max = max(left_max, height[left])
+            total += left_max - height[left]
+            left += 1
+        else:
+            right_max = max(right_max, height[right])
+            total += right_max - height[right]
+            right -= 1
+    return total
 ```
 
 ---
@@ -678,6 +715,21 @@ def can_complete_circuit(gas, cost):
             tank = 0
     return start
 
+# Best Time to Buy/Sell Stock I — single transaction
+# Track the minimum price seen so far; best profit is price - min_so_far.
+def max_profit(prices):
+    min_price = float('inf')
+    best = 0
+    for p in prices:
+        min_price = min(min_price, p)
+        best = max(best, p - min_price)
+    return best
+
+# Best Time to Buy/Sell Stock II — unlimited transactions
+# Sum every positive day-to-day delta (equivalent to capturing every uptrend).
+def max_profit_ii(prices):
+    return sum(max(0, prices[i] - prices[i - 1]) for i in range(1, len(prices)))
+
 # Activity selection (classic greedy) — see "Non-overlapping intervals" above
 ```
 
@@ -972,6 +1024,27 @@ def longest_palindrome_subseq(s):
             else:
                 dp[i][j] = max(dp[i + 1][j], dp[i][j - 1])
     return dp[0][n - 1]
+```
+
+### Longest Palindromic Substring — Expand Around Center
+
+O(n²) time, O(1) space — usually preferred over the DP version. Each position is a
+potential center; check both odd-length (single char) and even-length (between chars) centers.
+
+```python
+def longest_palindrome(s):
+    def expand(left, right):
+        while left >= 0 and right < len(s) and s[left] == s[right]:
+            left -= 1
+            right += 1
+        return s[left + 1:right]        # last valid window
+
+    best = ""
+    for i in range(len(s)):
+        for p in (expand(i, i), expand(i, i + 1)):   # odd and even centers
+            if len(p) > len(best):
+                best = p
+    return best
 ```
 
 ### Palindrome Partitioning — Min Cuts
@@ -1271,6 +1344,23 @@ def deserialize(data):
         node.right = go()
         return node
     return go()
+
+# Construct Binary Tree from Preorder + Inorder
+# Preorder's first value is the root; inorder splits the remaining values
+# into left and right subtrees around that root. O(n) with index lookup.
+def build_tree(preorder, inorder):
+    inorder_index = {v: i for i, v in enumerate(inorder)}
+    pre_iter = iter(preorder)
+
+    def build(lo, hi):
+        if lo > hi: return None
+        root = TreeNode(next(pre_iter))
+        mid = inorder_index[root.val]
+        root.left = build(lo, mid - 1)        # must build left before right
+        root.right = build(mid + 1, hi)        # — preorder is root → left → right
+        return root
+
+    return build(0, len(inorder) - 1)
 ```
 
 ---

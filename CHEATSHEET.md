@@ -734,6 +734,15 @@ expensive.cache_info()
 from functools import reduce
 reduce(lambda x, y: x + y, [1, 2, 3, 4])     # 10
 reduce(lambda x, y: x * y, [1, 2, 3, 4], 1)  # 24 (with initial value)
+
+# cmp_to_key — convert a -1/0/1 compare function into a sort key.
+# Use when ordering depends on a relationship between two items
+# and can't be expressed as a single key function (see PATTERNS.md → Sorting).
+from functools import cmp_to_key
+def compare(a, b):
+    # negative → a first; positive → b first; 0 → equal
+    return (a > b) - (a < b)
+nums.sort(key=cmp_to_key(compare))
 ```
 
 ---
