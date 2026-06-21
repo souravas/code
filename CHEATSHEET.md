@@ -474,6 +474,7 @@ from collections import defaultdict
 dd = defaultdict(int)        # default 0
 dd = defaultdict(list)       # default []
 dd = defaultdict(set)        # default set()
+dd = defaultdict(str)        # default str()
 dd = defaultdict(lambda: 'x')  # custom default
 
 # Gotcha: dd[key] CREATES the key with default if missing.
