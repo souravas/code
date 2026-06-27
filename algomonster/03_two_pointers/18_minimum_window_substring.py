@@ -1,49 +1,40 @@
-from collections import defaultdict, Counter
-
+from collections import defaultdict
 
 def get_minimum_window(original: str, check: str) -> str:
-    def update_window(window, left, right):
-        if not window:
-            return [left, right]
-
-        old_length = window[1] - window[0] + 1
-        new_length = right - left + 1
-
-        if new_length < old_length:
-            return [left, right]
-
-        if new_length == old_length:
-            old_string = original[window[0] : window[1] + 1]
-            new_string = original[left : right + 1]
-            if new_string < old_string:
-                return [left, right]
-        return window
-
-    check_map = Counter(check)
-    required = len(check_map.keys())
-    satisfied = 0
-
+    check_map = defaultdict(int)
     original_map = defaultdict(int)
-    left = 0
-    window = []
-    for right in range(len(original)):
-        current = original[right]
-        if current not in check_map:
-            continue
-        original_map[current] += 1
-        if original_map[current] != check_map[current]:
-            continue
-        satisfied += 1
-        while satisfied == required:
-            window = update_window(window, left, right)
-            remove_value = original[left]
-            left += 1
-            if remove_value not in check_map:
-                continue
-            original_map[remove_value] -= 1
-            if original_map[remove_value] < check_map[remove_value]:
-                satisfied -= 1
+    minimum_length = len(original) + 1
+    minimum_index = -1
+    satisfied = 0
+    left_index = 0
 
-    if not window:
+    for character in check:
+        check_map[character] += 1
+    required = len(check_map.keys())
+
+    for current_index in range(len(original)):
+        current_character = original[current_index]
+        original_map[current_character] += 1
+        if current_character in check_map:
+            if original_map[current_character] == check_map[current_character]:
+                satisfied += 1
+
+        while satisfied == required:
+            current_length = current_index - left_index + 1
+            if current_length < minimum_length:
+                minimum_length = current_length
+                minimum_index = left_index
+            elif current_length == minimum_length:
+                previous_word = original[minimum_index:minimum_index+minimum_length]
+                current_word = original[left_index:current_index+1]
+                if current_word < previous_word:
+                    minimum_index = left_index
+            original_map[original[left_index]] -= 1
+            if original[left_index] in check_map:
+                if check_map[original[left_index]] > original_map[original[left_index]]:
+                    satisfied -= 1
+            left_index += 1
+
+    if minimum_index == -1:
         return ""
-    return original[window[0] : window[1] + 1]
+    return original[minimum_index:minimum_index+minimum_length]
