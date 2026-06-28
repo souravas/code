@@ -19,11 +19,11 @@ def subtree_of_another_tree(root: Node | None, sub_root: Node) -> bool:
             root.right, sub_root.right
         )
 
-    if not root:
-        return False
-
     if check_same(root, sub_root):
         return True
+
+    if not root:
+        return False
 
     return subtree_of_another_tree(root.left, sub_root) or subtree_of_another_tree(
         root.right, sub_root
