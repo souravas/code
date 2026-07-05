@@ -18,3 +18,22 @@ def word_break(s: str, words: list[str]) -> bool:
 
     memo = {}
     return dfs(0)
+
+
+from functools import cache
+
+def word_break_cache(s: str, words: list[str]) -> bool:
+
+    @cache
+    def dfs(index):
+        if index == len(s):
+            return True
+
+        for word in words:
+            required_word = s[index:index+len(word)]
+            if required_word != word:
+                continue
+            if dfs(index + len(word)):
+                return True
+        return False
+    return dfs(0)
