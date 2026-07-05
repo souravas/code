@@ -23,3 +23,24 @@ def decode_ways(digits: str) -> int:
 
     memo = {}
     return dfs(0)
+
+
+from functools import cache
+
+def decode_ways_cache(digits: str) -> int:
+
+    @cache
+    def dfs(index):
+        if index == len(digits):
+            return 1
+
+        ways = 0
+        if digits[index] == "0":
+            return ways
+
+        ways += dfs(index + 1)
+
+        if 10 <= int(digits[index:index+2]) <= 26:
+            ways += dfs(index + 2)
+        return ways
+    return dfs(0)
