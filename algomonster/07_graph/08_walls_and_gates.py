@@ -2,10 +2,6 @@ INF = 2147483647
 
 from collections import deque
 
-INF = 2147483647
-
-from collections import deque
-
 
 def map_gate_distances(dungeon_map: list[list[int]]) -> list[list[int]]:
     queue = deque()
