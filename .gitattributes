@@ -1,0 +1,9 @@
+# Automatically detect text files and normalize them to LF in the repo,
+# and check them out as LF on every platform (including Windows).
+* text=auto eol=lf
+
+# Ensure all source and notes are stored as LF (Mac/Linux style) in the repo
+# but are usable on Windows.
+*.py text eol=lf
+*.md text eol=lf
+*.json text eol=lf
