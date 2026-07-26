@@ -18,3 +18,20 @@ def unique_paths_ii(obstacle_grid: list[list[int]]) -> int:
 
     cache = {}
     return dfs(0, 0)
+
+
+from functools import cache
+
+
+def unique_paths_ii_improved(obstacle_grid: list[list[int]]) -> int:
+
+    @cache
+    def dfs(row, col):
+        if row < 0 or col < 0 or obstacle_grid[row][col] == 1:
+            return 0
+        if row == 0 and col == 0:
+            return 1
+
+        return dfs(row - 1, col) + dfs(row, col - 1)
+
+    return dfs(len(obstacle_grid) - 1, len(obstacle_grid[0]) - 1)
