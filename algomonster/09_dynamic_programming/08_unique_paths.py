@@ -14,3 +14,19 @@ def unique_paths(m: int, n: int) -> int:
 
     cache = {}
     return dfs(0, 0)
+
+
+from functools import cache
+
+
+def unique_paths_improved(m: int, n: int) -> int:
+
+    @cache
+    def dfs(m, n):
+        if m == 0 and n == 0:
+            return 1
+        if m < 0 or n < 0:
+            return 0
+        return dfs(m - 1, n) + dfs(m, n - 1)
+
+    return dfs(m - 1, n - 1)
