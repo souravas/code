@@ -24,3 +24,24 @@ def dungeon_game(dungeon: list[list[int]]):
 
     cache = {}
     return dfs(0, 0)
+
+
+from functools import cache
+
+
+def dungeon_game_improved(dungeon: list[list[int]]) -> int | float:
+    rows = len(dungeon) - 1
+    cols = len(dungeon[0]) - 1
+
+    @cache
+    def dfs(row, col):
+        if row > rows or col > cols:
+            return inf
+        if row == rows and col == cols:
+            return max(1, 1 - dungeon[row][col])
+
+        next_need = min(dfs(row + 1, col), dfs(row, col + 1))
+
+        return max(1, next_need - dungeon[row][col])
+
+    return dfs(0, 0)
