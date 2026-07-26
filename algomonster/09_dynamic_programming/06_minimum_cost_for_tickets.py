@@ -22,3 +22,25 @@ def minimum_cost_for_tickets(days: list[int], costs: list[int]) -> int:
 
     memo = {}
     return dfs(0)
+
+
+from functools import cache
+
+
+def minimum_cost_for_tickets_improved(days: list[int], costs: list[int]) -> int:
+    days_set = set(days)
+
+    @cache
+    def dfs(day):
+        if day < 0:
+            return 0
+        if day not in days_set:
+            return dfs(day - 1)
+
+        daily = costs[0] + dfs(day - 1)
+        weekly = costs[1] + dfs(day - 7)
+        monthly = costs[2] + dfs(day - 30)
+
+        return min(daily, weekly, monthly)
+
+    return dfs(days[-1])
