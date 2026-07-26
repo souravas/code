@@ -23,3 +23,23 @@ def maximal_square(matrix: list[list[int]]) -> int:
             result = max(result, dfs(i, j))
 
     return result * result
+
+
+from functools import cache
+
+
+def maximal_square_improved(matrix: list[list[int]]) -> int:
+
+    @cache
+    def dfs(row, col):
+        if row < 0 or col < 0:
+            return 0
+        if matrix[row][col] == 0:
+            return 0
+        return 1 + min(dfs(row - 1, col), dfs(row, col - 1), dfs(row - 1, col - 1))
+
+    result = 0
+    for i in range(len(matrix)):
+        for j in range(len(matrix[0])):
+            result = max(result, dfs(i, j))
+    return result * result
