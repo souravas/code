@@ -21,3 +21,21 @@ def min_path_sum(grid: list[list[int]]) -> int | float:
 
     cache = {}
     return dfs(0, 0)
+
+
+from functools import cache
+
+
+def min_path_sum_improved(grid: list[list[int]]) -> int | float:
+
+    @cache
+    def dfs(row, col):
+        if row < 0 or col < 0:
+            return inf
+
+        if row == 0 and col == 0:
+            return grid[row][col]
+
+        return grid[row][col] + min(dfs(row - 1, col), dfs(row, col - 1))
+
+    return dfs(len(grid) - 1, len(grid[0]) - 1)
