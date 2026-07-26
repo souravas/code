@@ -12,3 +12,19 @@ def rob(nums: list[int]) -> int:
 
     memo = {}
     return dfs(len(nums) - 1)
+
+
+from functools import cache
+
+
+def rob_improved(nums: list[int]) -> int:
+
+    @cache
+    def helper(index):
+        if index < 0:
+            return 0
+        take = nums[index] + helper(index - 2)
+        skip = helper(index - 1)
+        return max(take, skip)
+
+    return helper(len(nums) - 1)
