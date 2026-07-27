@@ -20,3 +20,26 @@ def delete_string(costs: list[int], s1: str, s2: str) -> int:
         return min(delete_s1, delete_s2)
 
     return dfs(0, 0)
+
+
+from functools import cache
+
+
+def delete_string_improved(costs: list[int], s1: str, s2: str) -> int:
+
+    @cache
+    def dfs(index1, index2):
+        if index1 < 0 and index2 < 0:
+            return 0
+        elif index1 < 0:
+            return costs[ord(s2[index2]) - ord("a")] + dfs(index1, index2 - 1)
+        elif index2 < 0:
+            return costs[ord(s1[index1]) - ord("a")] + dfs(index1 - 1, index2)
+        if s1[index1] == s2[index2]:
+            return dfs(index1 - 1, index2 - 1)
+        return min(
+            costs[ord(s1[index1]) - ord("a")] + dfs(index1 - 1, index2),
+            costs[ord(s2[index2]) - ord("a")] + dfs(index1, index2 - 1),
+        )
+
+    return dfs(len(s1) - 1, len(s2) - 1)
