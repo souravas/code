@@ -23,3 +23,30 @@ def shortest_common_supersequence(str1: str, str2: str) -> str:
             return take_str2
 
     return dfs(0, 0)
+
+
+from functools import cache
+
+
+def shortest_common_supersequence_improved(str1: str, str2: str) -> str:
+
+    @cache
+    def dfs(index1, index2):
+        if index1 < 0 and index2 < 0:
+            return ""
+        elif index1 < 0:
+            return str2[index2] + dfs(index1, index2 - 1)
+        elif index2 < 0:
+            return str1[index1] + dfs(index1 - 1, index2)
+
+        if str1[index1] == str2[index2]:
+            return str1[index1] + dfs(index1 - 1, index2 - 1)
+        take_s1 = str1[index1] + dfs(index1 - 1, index2)
+        take_s2 = str2[index2] + dfs(index1, index2 - 1)
+
+        if len(take_s1) < len(take_s2):
+            return take_s1
+        else:
+            return take_s2
+
+    return "".join(reversed(dfs(len(str1) - 1, len(str2) - 1)))
