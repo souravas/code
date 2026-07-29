@@ -1,4 +1,7 @@
 from functools import cache
+import sys
+
+sys.setrecursionlimit(10000)
 
 
 def divisor_game(n: int) -> bool:
