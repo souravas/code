@@ -30,4 +30,4 @@ class Solution:
                     have -= 1
                 left += 1
         left, right = substring_index
-        return s[left:right + 1]
+        return s[left : right + 1]

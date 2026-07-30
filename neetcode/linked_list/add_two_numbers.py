@@ -4,7 +4,9 @@ from neetcode.linked_list.list_node import ListNode
 
 
 class Solution:
-    def addTwoNumbers(self, l1: Optional[ListNode], l2: Optional[ListNode]) -> Optional[ListNode]:
+    def addTwoNumbers(
+        self, l1: Optional[ListNode], l2: Optional[ListNode]
+    ) -> Optional[ListNode]:
         head = ListNode()
         result = head
         carry = 0

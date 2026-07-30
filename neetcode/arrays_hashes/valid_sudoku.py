@@ -10,9 +10,13 @@ class Solution:
         for i in range(len(board)):
             for j in range(len(board[0])):
                 current = board[i][j]
-                if current == '.':
+                if current == ".":
                     continue
-                if current in row[i] or current in col[j] or current in grid[(i // 3, j // 3)]:
+                if (
+                    current in row[i]
+                    or current in col[j]
+                    or current in grid[(i // 3, j // 3)]
+                ):
                     return False
                 row[i].add(current)
                 col[j].add(current)

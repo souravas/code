@@ -8,7 +8,7 @@ class Solution:
             if open < n:
                 generate(current + "(", open + 1, close)
             if close < open:
-                generate(current + ')', open, close + 1)
+                generate(current + ")", open, close + 1)
 
         result = []
         generate("", 0, 0)

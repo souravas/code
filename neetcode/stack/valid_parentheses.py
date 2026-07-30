@@ -1,6 +1,6 @@
 class Solution:
     def isValid(self, s: str) -> bool:
-        open_close_map = {'(': ')', '{': '}', '[': ']'}
+        open_close_map = {"(": ")", "{": "}", "[": "]"}
         stack = []
         for char in s:
             if char in open_close_map.keys():

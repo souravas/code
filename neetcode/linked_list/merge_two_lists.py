@@ -4,7 +4,9 @@ from neetcode.linked_list.list_node import ListNode
 
 
 class Solution:
-    def mergeTwoLists(self, list1: Optional[ListNode], list2: Optional[ListNode]) -> Optional[ListNode]:
+    def mergeTwoLists(
+        self, list1: Optional[ListNode], list2: Optional[ListNode]
+    ) -> Optional[ListNode]:
         result: ListNode = ListNode()
         curr = result
 

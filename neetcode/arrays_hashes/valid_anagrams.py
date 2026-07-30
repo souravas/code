@@ -8,9 +8,9 @@ class Solution:
     def isAnagram2(self, s: str, t: str) -> bool:
         alphabets = [0] * 26
         for character in s:
-            alphabets[ord(character) - ord('a')] += 1
+            alphabets[ord(character) - ord("a")] += 1
         for character in t:
-            alphabets[ord(character) - ord('a')] -= 1
+            alphabets[ord(character) - ord("a")] -= 1
         for i in alphabets:
             if i != 0:
                 return False

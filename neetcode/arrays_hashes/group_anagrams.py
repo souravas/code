@@ -5,7 +5,7 @@ class Solution:
     def groupAnagrams1(self, strs: list[str]) -> list[list[str]]:
         anagrams_map = {}
         for word in strs:
-            sorted_word = ''.join(sorted(word))
+            sorted_word = "".join(sorted(word))
             if sorted_word in anagrams_map:
                 anagrams_map[sorted_word].append(word)
             else:
@@ -15,7 +15,7 @@ class Solution:
     def groupAnagrams2(self, strs: list[str]) -> list[list[str]]:
         anagrams_map = defaultdict(list)
         for word in strs:
-            sorted_word = ''.join(sorted(word))
+            sorted_word = "".join(sorted(word))
             anagrams_map[sorted_word].append(word)
         return list(anagrams_map.values())
 
