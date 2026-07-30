@@ -27,6 +27,7 @@ def decode_ways(digits: str) -> int:
 
 from functools import cache
 
+
 def decode_ways_cache(digits: str) -> int:
 
     @cache
@@ -40,7 +41,8 @@ def decode_ways_cache(digits: str) -> int:
 
         ways += dfs(index + 1)
 
-        if 10 <= int(digits[index:index+2]) <= 26:
+        if 10 <= int(digits[index : index + 2]) <= 26:
             ways += dfs(index + 2)
         return ways
+
     return dfs(0)

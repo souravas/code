@@ -1,5 +1,6 @@
 from collections import defaultdict
 
+
 def get_minimum_window(original: str, check: str) -> str:
     check_map = defaultdict(int)
     original_map = defaultdict(int)
@@ -25,8 +26,8 @@ def get_minimum_window(original: str, check: str) -> str:
                 minimum_length = current_length
                 minimum_index = left_index
             elif current_length == minimum_length:
-                previous_word = original[minimum_index:minimum_index+minimum_length]
-                current_word = original[left_index:current_index+1]
+                previous_word = original[minimum_index : minimum_index + minimum_length]
+                current_word = original[left_index : current_index + 1]
                 if current_word < previous_word:
                     minimum_index = left_index
             original_map[original[left_index]] -= 1
@@ -37,4 +38,4 @@ def get_minimum_window(original: str, check: str) -> str:
 
     if minimum_index == -1:
         return ""
-    return original[minimum_index:minimum_index+minimum_length]
+    return original[minimum_index : minimum_index + minimum_length]

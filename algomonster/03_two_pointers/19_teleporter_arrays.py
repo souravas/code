@@ -10,7 +10,6 @@ def maximum_score(arr1: list[int], arr2: list[int]) -> int:
     section_sum1 = 0
     section_sum2 = 0
 
-
     while index1 < n1 and index2 < n2:
         if arr1[index1] == arr2[index2]:
             result += max(section_sum1, section_sum2) + arr1[index1]

@@ -30,7 +30,12 @@ def is_balanced2(tree: Node) -> bool:
             return [True, 0]
         left_balanced, left_val = dfs(root.left)
         right_balanced, right_val = dfs(root.right)
-        balanced = left_balanced and right_balanced and (abs(abs(left_val) - abs(right_val)) <= 1)
+        balanced = (
+            left_balanced
+            and right_balanced
+            and (abs(abs(left_val) - abs(right_val)) <= 1)
+        )
         return [balanced, 1 + max(left_val, right_val)]
+
     is_balanced, _ = dfs(tree)
     return is_balanced

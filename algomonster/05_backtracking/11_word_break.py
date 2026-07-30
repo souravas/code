@@ -22,6 +22,7 @@ def word_break(s: str, words: list[str]) -> bool:
 
 from functools import cache
 
+
 def word_break_cache(s: str, words: list[str]) -> bool:
 
     @cache
@@ -30,10 +31,11 @@ def word_break_cache(s: str, words: list[str]) -> bool:
             return True
 
         for word in words:
-            required_word = s[index:index+len(word)]
+            required_word = s[index : index + len(word)]
             if required_word != word:
                 continue
             if dfs(index + len(word)):
                 return True
         return False
+
     return dfs(0)

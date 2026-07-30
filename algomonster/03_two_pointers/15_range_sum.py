@@ -6,6 +6,4 @@ def range_sum_query_immutable(nums: list[int], left: int, right: int) -> int:
         current_sum += num
         prefix_sum.append(current_sum)
 
-    return prefix_sum[right+1] - prefix_sum[left]
-
-
+    return prefix_sum[right + 1] - prefix_sum[left]

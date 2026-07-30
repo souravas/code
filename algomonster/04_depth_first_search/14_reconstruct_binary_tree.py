@@ -7,7 +7,7 @@ class Node:
 
 def construct_binary_tree(preorder: list[int], inorder: list[int]) -> Node | None:
     index = 0
-    inorder_map = { value: index for index, value in enumerate(inorder) }
+    inorder_map = {value: index for index, value in enumerate(inorder)}
 
     def construct(left_index, right_index):
         nonlocal index
