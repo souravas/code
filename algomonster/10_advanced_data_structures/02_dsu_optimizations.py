@@ -3,11 +3,12 @@ class UnionFind:
     def __init__(self, n: int):
         self.parent = list(range(n))
 
-    # find the root of x by walking parent pointers
+    # find the root, then point x straight at it
     def find(self, x: int) -> int:
         if self.parent[x] == x:
             return x
-        return self.find(self.parent[x])
+        self.parent[x] = self.find(self.parent[x])
+        return self.parent[x]
 
     # merge the clusters containing x and y
     def union(self, x: int, y: int) -> None:
