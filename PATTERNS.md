@@ -10,10 +10,14 @@ Algorithm templates and patterns. For syntax lookups, see [CHEATSHEET.md](CHEATS
 - [Fast & Slow Pointers](#fast--slow-pointers)
 - [Sliding Window](#sliding-window)
 - [Prefix Sum](#prefix-sum)
+- [Hashing](#hashing)
 - [Monotonic Stack](#monotonic-stack)
+- [Stack Parsing & Design](#stack-parsing--design)
 - [Heap / Top-K](#heap--top-k)
 - [Quickselect](#quickselect)
 - [Intervals](#intervals)
+- [Line Sweep](#line-sweep)
+- [Divide & Conquer](#divide--conquer)
 - [Greedy](#greedy)
 - [Backtracking](#backtracking)
 - [Dynamic Programming](#dynamic-programming)
@@ -26,6 +30,7 @@ Algorithm templates and patterns. For syntax lookups, see [CHEATSHEET.md](CHEATS
 - [Graphs](#graphs)
 - [Trie](#trie)
 - [Union-Find](#union-find)
+- [Segment Tree](#segment-tree)
 - [LRU Cache](#lru-cache)
 
 ---
@@ -67,6 +72,63 @@ def largest_number(nums):
         return 0
     arr.sort(key=cmp_to_key(compare))
     return ''.join(arr).lstrip('0') or '0'
+```
+
+### Merge Sort
+
+You will almost never hand-roll a sort in an interview — but the **merge step** is a reusable
+primitive. Counting inversions, "count of smaller numbers after self", and the skyline problem are
+all a merge sort with extra bookkeeping in `merge`. See also
+[Divide & Conquer](#divide--conquer).
+
+```python
+def merge_sort(nums):
+    if len(nums) <= 1:
+        return nums
+    mid = len(nums) // 2
+    return merge(merge_sort(nums[:mid]), merge_sort(nums[mid:]))
+
+def merge(left, right):
+    merged = []
+    i = j = 0
+    while i < len(left) and j < len(right):
+        if left[i] <= right[j]:     # <= keeps the sort stable
+            merged.append(left[i]); i += 1
+        else:
+            merged.append(right[j]); j += 1
+    merged.extend(left[i:])         # exactly one of these two is non-empty
+    merged.extend(right[j:])
+    return merged
+```
+
+O(n log n) time, O(n) extra space, stable.
+
+### The O(n²) sorts
+
+Worth being able to write, mostly as talking points about stability and best-case behaviour.
+
+```python
+def bubble_sort(nums):              # stable; O(n) best case if you track swaps
+    for i in range(len(nums)):
+        for j in range(len(nums) - 1 - i):
+            if nums[j] > nums[j + 1]:
+                nums[j], nums[j + 1] = nums[j + 1], nums[j]
+    return nums
+
+def selection_sort(nums):           # NOT stable; always O(n²), minimal writes
+    for i in range(len(nums)):
+        lo = min(range(i, len(nums)), key=nums.__getitem__)
+        nums[i], nums[lo] = nums[lo], nums[i]
+    return nums
+
+def insertion_sort(nums):           # stable; O(n) on nearly-sorted input
+    for i in range(1, len(nums)):
+        cur, j = nums[i], i - 1
+        while j >= 0 and nums[j] > cur:
+            nums[j + 1] = nums[j]
+            j -= 1
+        nums[j + 1] = cur
+    return nums
 ```
 
 **When to reach for it:** any problem that says "sorted" or where order unlocks a two-pointer / greedy / binary-search approach.
@@ -262,6 +324,39 @@ def trap(height):
     return total
 ```
 
+### Two pointers across two arrays
+
+The other half of the family: instead of both pointers walking one array, each walks its own. Always
+advance the pointer with the smaller value — that is what keeps the two walks aligned. This is the
+merge step of [merge sort](#merge-sort), and the same skeleton solves intersection of sorted arrays,
+merging sorted lists, and "sum between shared checkpoints" problems.
+
+```python
+# Teleporter arrays — two sorted arrays share some values. Between shared values
+# you may take either array's run, and at a shared value you may switch sides.
+# Accumulate each side's running section sum; at every meeting point commit the
+# better of the two and reset both.
+def maximum_score(arr1, arr2, mod=10**9 + 7):
+    i = j = 0
+    sum1 = sum2 = 0
+    total = 0
+
+    while i < len(arr1) and j < len(arr2):
+        if arr1[i] < arr2[j]:
+            sum1 += arr1[i]; i += 1
+        elif arr1[i] > arr2[j]:
+            sum2 += arr2[j]; j += 1
+        else:                                  # shared value — commit and switch
+            total += max(sum1, sum2) + arr1[i]
+            sum1 = sum2 = 0
+            i += 1
+            j += 1
+
+    sum1 += sum(arr1[i:])                      # drain the tails
+    sum2 += sum(arr2[j:])
+    return (total + max(sum1, sum2)) % mod
+```
+
 ---
 
 ## Fast & Slow Pointers
@@ -381,7 +476,84 @@ def longest_k_distinct(s, k):
             left += 1
         best = max(best, right - left + 1)
     return best
+
+# Longest repeating character replacement — at most k characters may be changed.
+# The window is valid when (window length - count of the most common char) <= k,
+# i.e. the characters we'd have to overwrite fit inside the budget.
+def character_replacement(s, k):
+    from collections import defaultdict
+    count = defaultdict(int)
+    left = best = 0
+    for right in range(len(s)):
+        count[s[right]] += 1
+        while (right - left + 1) - max(count.values()) > k:
+            count[s[left]] -= 1
+            left += 1
+        best = max(best, right - left + 1)
+    return best
+
+# Shrink-on-duplicate — shortest window containing a repeat.
+# Inverts the usual goal: the window is INVALID once a duplicate appears,
+# and the answer is recorded at the moment it becomes invalid.
+def least_consecutive_cards_to_match(cards):
+    seen = set()
+    left = 0
+    best = len(cards) + 1
+    for right in range(len(cards)):
+        while cards[right] in seen:
+            best = min(best, right - left + 1)
+            seen.remove(cards[left])
+            left += 1
+        seen.add(cards[right])
+    return -1 if best > len(cards) else best
 ```
+
+### Fixed window with a match counter
+
+When the window size is fixed and you need "is this window an anagram / permutation of t?",
+maintaining `max(count.values())` or comparing whole dicts each step is O(26) per move. Track a
+single `matches` counter instead and update it only for the two characters that change: O(1) per
+step.
+
+```python
+# Permutation in String — does s2 contain a permutation of s1?
+def check_inclusion(s1, s2):
+    if len(s1) > len(s2):
+        return False
+
+    need = [0] * 26
+    have = [0] * 26
+    for i in range(len(s1)):
+        need[ord(s1[i]) - ord('a')] += 1
+        have[ord(s2[i]) - ord('a')] += 1
+
+    matches = sum(need[i] == have[i] for i in range(26))
+
+    left = 0
+    for right in range(len(s1), len(s2)):
+        if matches == 26:
+            return True
+
+        i = ord(s2[right]) - ord('a')            # character entering
+        have[i] += 1
+        if have[i] == need[i]:
+            matches += 1
+        elif have[i] - 1 == need[i]:             # we just broke a match
+            matches -= 1
+
+        o = ord(s2[left]) - ord('a')             # character leaving
+        have[o] -= 1
+        if have[o] == need[o]:
+            matches += 1
+        elif have[o] + 1 == need[o]:
+            matches -= 1
+        left += 1
+
+    return matches == 26
+```
+
+**Find All Anagrams in a String** is the same loop, appending `left` to a result list wherever
+`matches == 26` instead of returning early.
 
 ---
 
@@ -431,6 +603,94 @@ def submatrix_sum(prefix, r1, c1, r2, c2):
             - prefix[r1][c2 + 1]
             - prefix[r2 + 1][c1]
             + prefix[r1][c1])
+```
+
+---
+
+## Hashing
+
+A set or dict turns "have I seen this?" into O(1). The pattern worth internalising is not the
+lookup itself but **choosing a key that collapses the problem**.
+
+```python
+# Two Sum — key is the complement we still need
+def two_sum(nums, target):
+    seen = {}                                  # value -> index
+    for i, x in enumerate(nums):
+        if target - x in seen:
+            return [seen[target - x], i]
+        seen[x] = i
+
+# Group Anagrams — key is a canonical form of the word
+def group_anagrams(strs):
+    from collections import defaultdict
+    groups = defaultdict(list)
+    for s in strs:
+        key = tuple(sorted(s))                 # or a 26-length count tuple: O(n) per word
+        groups[key].append(s)
+    return list(groups.values())
+
+# Contains Duplicate
+def contains_duplicate(nums):
+    return len(set(nums)) < len(nums)
+
+# Valid Sudoku — one pass, three dicts of sets. The box key is the insight:
+# integer-dividing both coordinates by 3 maps every cell to its 3x3 box.
+def is_valid_sudoku(board):
+    from collections import defaultdict
+    rows, cols, boxes = defaultdict(set), defaultdict(set), defaultdict(set)
+    for r in range(9):
+        for c in range(9):
+            v = board[r][c]
+            if v == '.':
+                continue
+            if v in rows[r] or v in cols[c] or v in boxes[(r // 3, c // 3)]:
+                return False
+            rows[r].add(v)
+            cols[c].add(v)
+            boxes[(r // 3, c // 3)].add(v)
+    return True
+```
+
+### Longest Consecutive Sequence
+
+O(n) without sorting. Only start counting from a number that *begins* a run — `num - 1` not being
+present. Every element is then visited at most twice overall.
+
+```python
+def longest_consecutive(nums):
+    seen = set(nums)
+    best = 0
+    for num in seen:
+        if num - 1 in seen:
+            continue                           # not the start of a run, skip
+        length = 0
+        while num + length in seen:
+            length += 1
+        best = max(best, length)
+    return best
+```
+
+### Length-prefix encoding
+
+Serialising a list of strings into one string, when the strings may contain any character. A plain
+delimiter fails because the delimiter can appear in the data; a length prefix cannot be ambiguous.
+
+```python
+def encode(strs):
+    return ''.join(f"{len(s)}#{s}" for s in strs)
+
+def decode(s):
+    out = []
+    i = 0
+    while i < len(s):
+        j = i
+        while s[j] != '#':                     # digits up to the first '#' are the length
+            j += 1
+        length = int(s[i:j])
+        out.append(s[j + 1:j + 1 + length])
+        i = j + 1 + length
+    return out
 ```
 
 ---
@@ -487,6 +747,125 @@ def max_sliding_window(nums, k):
         if i >= k - 1:
             result.append(nums[dq[0]])
     return result
+```
+
+---
+
+## Stack Parsing & Design
+
+Not every stack problem is monotonic. The other two families: **matching/parsing** (the stack holds
+context you must return to) and **augmented stacks** (a parallel stack maintains an invariant).
+
+```python
+# Valid Parentheses
+def is_valid(s):
+    pairs = {')': '(', ']': '[', '}': '{'}
+    stack = []
+    for c in s:
+        if c in pairs:
+            if not stack or stack.pop() != pairs[c]:
+                return False
+        else:
+            stack.append(c)
+    return not stack
+
+# Evaluate Reverse Polish Notation
+def eval_rpn(tokens):
+    ops = {
+        '+': lambda a, b: a + b,
+        '-': lambda a, b: a - b,
+        '*': lambda a, b: a * b,
+        '/': lambda a, b: int(a / b),   # truncates toward zero; a // b floors — not the same
+    }
+    stack = []
+    for token in tokens:
+        if token in ops:
+            right = stack.pop()
+            left = stack.pop()           # order matters for - and /
+            stack.append(ops[token](left, right))
+        else:
+            stack.append(int(token))
+    return stack.pop()
+```
+
+### Min Stack — O(1) `getMin`
+
+Keep a parallel stack of "minimum as of this point". Push onto it only when the new value ties or
+beats the current min; `<=` rather than `<` is what makes duplicates pop correctly.
+
+```python
+class MinStack:
+    def __init__(self):
+        self.stack = []
+        self.mins = []
+
+    def push(self, val):
+        self.stack.append(val)
+        if not self.mins or val <= self.mins[-1]:
+            self.mins.append(val)
+
+    def pop(self):
+        if self.stack.pop() == self.mins[-1]:
+            self.mins.pop()
+
+    def top(self):
+        return self.stack[-1]
+
+    def getMin(self):
+        return self.mins[-1]
+```
+
+### Basic Calculator — `+`, `-`, and nesting
+
+No recursion needed. Carry a running `result` and a running `sign`; on `(` push both and reset, on
+`)` pop them and fold the sub-expression back in. Digits are consumed greedily so multi-digit
+numbers work.
+
+```python
+def basic_calculator(s):
+    stack = []
+    result = 0
+    sign = 1
+    i = 0
+    while i < len(s):
+        c = s[i]
+        if c.isdigit():
+            num = 0
+            while i < len(s) and s[i].isdigit():
+                num = num * 10 + int(s[i])
+                i += 1
+            result += sign * num
+            continue                      # i already advanced past the number
+        if c == '+':
+            sign = 1
+        elif c == '-':
+            sign = -1
+        elif c == '(':
+            stack.append(result)
+            stack.append(sign)
+            result, sign = 0, 1           # start the sub-expression fresh
+        elif c == ')':
+            prev_sign = stack.pop()
+            prev_result = stack.pop()
+            result = prev_result + prev_sign * result
+        i += 1
+    return result
+```
+
+### Car Fleet
+
+Process cars from the one closest to the target backwards. Each stack entry is a fleet's arrival
+time; if the car behind arrives no later than the fleet ahead, it catches up and merges — pop it.
+The stack height is the number of distinct fleets.
+
+```python
+def car_fleet(target, position, speed):
+    stack = []
+    for p, s in sorted(zip(position, speed), reverse=True):
+        stack.append((target - p) / s)                  # time for this car to reach the target
+        if len(stack) >= 2 and stack[-1] <= stack[-2]:
+            stack.pop()                                 # caught the fleet ahead
+    return len(stack)
 ```
 
 ---
@@ -584,6 +963,99 @@ def least_interval(tasks, n):
 
 **When to reach for it:** top-K, k-closest, k-th order statistic in a stream, merging k streams, sliding-window median, scheduling.
 
+### Kth Largest in a Stream — the heap *is* the state
+
+A design-class variant: keep a min-heap trimmed to exactly `k` elements, so its root is permanently
+the kth largest.
+
+```python
+import heapq
+
+class KthLargest:
+    def __init__(self, k, nums):
+        self.k = k
+        self.heap = nums
+        heapq.heapify(self.heap)
+        while len(self.heap) > k:
+            heapq.heappop(self.heap)
+
+    def add(self, val):
+        heapq.heappush(self.heap, val)
+        if len(self.heap) > self.k:
+            heapq.heappop(self.heap)
+        return self.heap[0]
+```
+
+### Reorganize String — most-frequent-first placement
+
+Place the most frequent character into every other slot (index 0, 2, 4, …), wrapping to index 1 when
+you run off the end. Impossible exactly when some character's count exceeds `(n + 1) // 2`, so check
+that first and bail.
+
+```python
+from collections import Counter
+import heapq
+
+def reorganize_string(s):
+    n = len(s)
+    counts = Counter(s)
+    heap = [(-c, ch) for ch, c in counts.items()]       # negate for a max-heap
+    heapq.heapify(heap)
+
+    if -heap[0][0] > (n + 1) // 2:
+        return ""
+
+    result = [''] * n
+    index = 0
+    while heap:
+        count, ch = heapq.heappop(heap)
+        for _ in range(-count):
+            result[index] = ch
+            index += 2
+            if index >= n:
+                index = 1                                # wrap to the odd slots
+    return ''.join(result)
+```
+
+### Ugly Numbers — heap as an ordered generator
+
+Pop the smallest, push its multiples, dedupe with a set. The generic shape of "generate values in
+increasing order from a rule".
+
+```python
+import heapq
+
+def nth_ugly_number(n):
+    heap = [1]
+    seen = {1}
+    for _ in range(n - 1):
+        value = heapq.heappop(heap)
+        for prime in (2, 3, 5):
+            nxt = value * prime
+            if nxt not in seen:
+                seen.add(nxt)
+                heapq.heappush(heap, nxt)
+    return heap[0]
+```
+
+### Last Stone Weight
+
+Straight max-heap simulation — negate on the way in, negate on the way out.
+
+```python
+import heapq
+
+def last_stone_weight(stones):
+    heap = [-s for s in stones]
+    heapq.heapify(heap)
+    while len(heap) > 1:
+        first = -heapq.heappop(heap)
+        second = -heapq.heappop(heap)
+        if first != second:
+            heapq.heappush(heap, -(first - second))
+    return -heap[0] if heap else 0
+```
+
 ---
 
 ## Quickselect
@@ -666,6 +1138,11 @@ def min_meeting_rooms(intervals):
         heapq.heappush(heap, end)
     return len(heap)
 
+# Meeting Rooms I — can one person attend everything?
+def can_attend_meetings(intervals):
+    intervals.sort()
+    return all(a[1] <= b[0] for a, b in zip(intervals, intervals[1:]))
+
 # Non-overlapping intervals — minimum removals (greedy by end time)
 def erase_overlap_intervals(intervals):
     intervals.sort(key=lambda x: x[1])
@@ -677,7 +1154,196 @@ def erase_overlap_intervals(intervals):
         else:
             count += 1
     return count
+
+# Minimum Arrows to Burst Balloons — same greedy, counting kept groups
+# instead of removed ones. Sort by end, shoot at the end of the first
+# balloon still unburst; that arrow clears everything overlapping it.
+def find_min_arrows(points):
+    points.sort(key=lambda x: x[1])
+    arrows = 0
+    limit = float('-inf')
+    for start, end in points:
+        if start > limit:
+            arrows += 1
+            limit = end
+    return arrows
 ```
+
+### Partition Labels
+
+Intervals you have to *derive* first. Each character's last occurrence defines an interval; scan
+left to right extending the current partition's end to the furthest last-occurrence seen. When the
+scan index reaches that end, nothing inside the partition appears later — cut.
+
+```python
+def partition_labels(s):
+    last = {ch: i for i, ch in enumerate(s)}
+    parts = []
+    start = end = 0
+    for i, ch in enumerate(s):
+        end = max(end, last[ch])
+        if i == end:
+            parts.append(end - start + 1)
+            start = i + 1
+    return parts
+```
+
+---
+
+## Line Sweep
+
+Sort the *endpoints* rather than the intervals, then move a vertical line across them carrying a
+running state. Where the interval greedies above answer "how many / which ones", a sweep answers
+"what is true at each x".
+
+```python
+# Minimum rooms via a delta sweep — the counting version of Meeting Rooms II.
+# +1 at every start, -1 at every end; the answer is the running maximum.
+def min_meeting_rooms_sweep(intervals):
+    events = []
+    for start, end in intervals:
+        events.append((start, 1))
+        events.append((end, -1))
+    events.sort()                    # ties: -1 sorts before +1, so a room freed
+                                     # at time t is reusable at time t
+    ongoing = best = 0
+    for _, delta in events:
+        ongoing += delta
+        best = max(best, ongoing)
+    return best
+```
+
+### Union area of rectangles — sweep + coordinate compression
+
+Cut the plane into vertical strips at every distinct x. Inside one strip the set of covering
+rectangles never changes, so the strip's area is `width × (covered y-length)`, and the covered
+y-length is a 1-D interval-merge over the y-spans of the rectangles crossing that strip.
+
+```python
+def rectangle_area_ii(rectangles):
+    xs = sorted({x for r in rectangles for x in (r[0], r[2])})
+    total = 0
+
+    for xl, xr in zip(xs, xs[1:]):
+        width = xr - xl
+        if width == 0:
+            continue
+        spans = sorted(
+            (y1, y2)
+            for x1, y1, x2, y2 in rectangles
+            if x1 <= xl and x2 >= xr and y1 < y2     # rectangle spans this strip
+        )
+        covered = 0
+        cur_end = float('-inf')
+        for y1, y2 in spans:
+            y1 = max(y1, cur_end)                    # clip against what's already counted
+            if y2 > y1:
+                covered += y2 - y1
+                cur_end = y2
+        total += width * covered
+
+    return total
+```
+
+O(n² log n) as written. Replacing the per-strip merge with a segment tree over compressed
+y-coordinates brings it to O(n log n).
+
+---
+
+## Divide & Conquer
+
+Split, solve both halves, then do the real work in the **combine** step. If a problem asks for a
+count of cross-pairs (inversions, smaller-elements-to-the-right), the merge step is where those
+pairs become countable in O(n) instead of O(n²).
+
+### Count of Smaller Numbers After Self
+
+Merge sort on `(original_index, value)` pairs. When a left element is emitted, exactly `r` right-half
+elements have already been emitted — and every one of them was strictly smaller. Ties go left
+(`<=`) so that equal values are not counted as smaller.
+
+```python
+def count_smaller(nums):
+    counts = [0] * len(nums)
+
+    def sort(pairs):
+        if len(pairs) <= 1:
+            return pairs
+        mid = len(pairs) // 2
+        left, right = sort(pairs[:mid]), sort(pairs[mid:])
+
+        merged = []
+        l = r = 0
+        while l < len(left) and r < len(right):
+            if left[l][1] <= right[r][1]:
+                counts[left[l][0]] += r          # r right-elements already emitted
+                merged.append(left[l])
+                l += 1
+            else:
+                merged.append(right[r])
+                r += 1
+        for i in range(l, len(left)):            # leftovers: all of right was smaller
+            counts[left[i][0]] += r
+        merged.extend(left[l:])
+        merged.extend(right[r:])
+        return merged
+
+    sort(list(enumerate(nums)))
+    return counts
+```
+
+Counting **inversions** is the same code with a single scalar accumulator instead of the per-index
+array.
+
+### The Skyline Problem
+
+Each building is trivially its own skyline; merging two skylines is a two-pointer walk that tracks
+the current height contributed by *each* side and emits `max(h1, h2)` whenever either changes.
+Suppressing repeated heights on emit is what keeps the output canonical.
+
+```python
+def get_skyline(buildings):
+    if not buildings:
+        return []
+    return _solve(buildings, 0, len(buildings) - 1)
+
+def _solve(bs, lo, hi):
+    if lo == hi:
+        left, right, height = bs[lo]
+        return [[left, height], [right, 0]]
+    mid = (lo + hi) // 2
+    return _merge(_solve(bs, lo, mid), _solve(bs, mid + 1, hi))
+
+def _merge(A, B):
+    out = []
+    i = j = 0
+    h1 = h2 = 0                          # current height from each side
+
+    def push(x, h):
+        if not out or out[-1][1] != h:   # skip no-op height changes
+            out.append([x, h])
+
+    while i < len(A) and j < len(B):
+        if A[i][0] < B[j][0]:
+            x, h1 = A[i]; i += 1
+        elif A[i][0] > B[j][0]:
+            x, h2 = B[j]; j += 1
+        else:                            # same x: consume both before emitting
+            x, h1 = A[i]
+            h2 = B[j][1]
+            i += 1
+            j += 1
+        push(x, max(h1, h2))
+
+    for x, h in A[i:]:                   # the exhausted side contributes 0 from here,
+        push(x, h)                       # and max(0, h) == h
+    for x, h in B[j:]:
+        push(x, h)
+
+    return out
+```
+
+O(n log n). The alternative formulation is a line sweep with a max-heap of active heights.
 
 ---
 
@@ -686,6 +1352,33 @@ def erase_overlap_intervals(intervals):
 Make the locally optimal choice at each step. Only works when the problem has the greedy-choice property — usually you need a sorting key or a clear invariant.
 
 ```python
+# The shape almost every greedy takes
+def greedy(items):
+    items.sort(key=greedy_key)          # deadline, end time, size, value/weight ratio, ...
+    state = initial_state()
+    result = 0
+    for item in items:
+        if is_feasible(item, state):    # take it only if the local choice stays valid
+            result += take(item, state)
+    return result
+```
+
+Picking the sort key *is* the problem. Correctness rests on an exchange argument — "swapping any
+optimal solution's choice for mine is never worse" — not on the fact that it passed the samples.
+When you cannot justify one, the fallback is [DP](#dynamic-programming).
+
+```python
+# Coin change, greedy version — correct ONLY for canonical coin systems
+# (e.g. 1/5/10/25). For arbitrary coins it fails: coins [1, 3, 4], amount 6
+# gives 4+1+1 = 3 coins, but the optimum is 3+3 = 2. That case needs DP.
+def make_change(coins, amount):
+    coins.sort(reverse=True)
+    count = 0
+    for coin in coins:
+        count += amount // coin
+        amount %= coin
+    return count if amount == 0 else -1
+
 # Jump Game — can you reach the end?
 def can_jump(nums):
     farthest = 0
@@ -845,29 +1538,184 @@ def solve_n_queens(n):
 
     bt(0)
     return result
+
+# Generate Parentheses — prune by counts instead of validating at the leaf.
+# Open a bracket while any remain; close one only while it would stay balanced.
+def generate_parentheses(n):
+    result = []
+    current = []
+    def bt(opened, closed):
+        if len(current) == 2 * n:
+            result.append(''.join(current))
+            return
+        if opened < n:
+            current.append('(')
+            bt(opened + 1, closed)
+            current.pop()
+        if opened > closed:
+            current.append(')')
+            bt(opened, closed + 1)
+            current.pop()
+    bt(0, 0)
+    return result
+
+# Palindrome Partitioning — the choice at each step is where to cut next
+def partition(s):
+    result = []
+
+    def is_palindrome(i, j):
+        while i < j:
+            if s[i] != s[j]:
+                return False
+            i += 1
+            j -= 1
+        return True
+
+    def bt(start, current):
+        if start >= len(s):
+            result.append(current[:])
+            return
+        for end in range(start, len(s)):
+            if is_palindrome(start, end):        # prune: only cut on a palindrome
+                current.append(s[start:end + 1])
+                bt(end + 1, current)
+                current.pop()
+
+    bt(0, [])
+    return result
 ```
+
+### Deduplication — skipping equal siblings
+
+When the input has duplicates and the output must not, sort first, then **skip a candidate that
+equals its predecessor at the same recursion depth**. The first branch already explored everything
+that branch could produce.
+
+```python
+# Subsets II / Combination Sum II shape
+def subsets_with_dup(nums):
+    nums.sort()
+    result = []
+    def bt(start, current):
+        result.append(current[:])
+        for i in range(start, len(nums)):
+            if i > start and nums[i] == nums[i - 1]:
+                continue                          # same value, same level → same subtree
+            current.append(nums[i])
+            bt(i + 1, current)
+            current.pop()
+    bt(0, [])
+    return result
+```
+
+The same idea in an iterative two-pointer solution — advance past the run of equal values on both
+sides after recording a hit:
+
+```python
+# Three Sum, unique triplets
+def three_sum_unique(nums, target=0):
+    nums.sort()
+    result = []
+    for i in range(len(nums) - 2):
+        if i > 0 and nums[i] == nums[i - 1]:
+            continue
+        j, k = i + 1, len(nums) - 1
+        while j < k:
+            total = nums[i] + nums[j] + nums[k]
+            if total == target:
+                result.append([nums[i], nums[j], nums[k]])
+                while j < k and nums[j] == nums[j + 1]:
+                    j += 1
+                while j < k and nums[k] == nums[k - 1]:
+                    k -= 1
+                j += 1
+                k -= 1
+            elif total < target:
+                j += 1
+            else:
+                k -= 1
+    return result
+```
+
+### When backtracking becomes DP
+
+If the recursion returns a **count or an optimum** rather than enumerating every solution, states
+repeat and memoising collapses exponential work to polynomial. Same recursion, one decorator.
+
+```python
+from functools import cache
+
+# Decode Ways — count decodings of a digit string ('1'..'26' → 'A'..'Z')
+def decode_ways(digits):
+    @cache
+    def dfs(i):
+        if i == len(digits):
+            return 1                              # consumed everything: one valid decoding
+        if digits[i] == '0':
+            return 0                              # no letter starts with 0
+        ways = dfs(i + 1)
+        if 10 <= int(digits[i:i + 2]) <= 26:      # slicing past the end is safe
+            ways += dfs(i + 2)
+        return ways
+    return dfs(0)
+```
+
+See [Dynamic Programming](#dynamic-programming) for the full treatment, and
+[Word Break](#word-break) for the same conversion applied to string segmentation.
 
 ---
 
 ## Dynamic Programming
+
+**Families:** [linear / stairs](#linear-dp--the-stairs-family) ·
+[grid](#grid-dp) · [dual-sequence](#longest-common-subsequence) ·
+[knapsack](#01-knapsack) · [interval](#interval-dp) · [DAG](#dp-on-a-dag) ·
+[tree](#tree-dp) · [bitmask](#bitmask-dp)
 
 ### Two flavors
 
 - **Top-down (memoization):** write the recurrence as a recursive function, cache results.
 - **Bottom-up (tabulation):** fill a `dp` table iteratively from base cases.
 
-### Memoization — cleanest with `@lru_cache`
+Top-down is usually the faster route under interview pressure: write the brute-force recursion,
+confirm the base cases, add `@cache`. Convert to a table only if you need the space optimisation or
+the interviewer asks.
+
+### Recognising a DP problem
+
+1. It asks for a **max / min / count / "is it possible"** over a set of choices, not for the choices themselves.
+2. The choice at each step **constrains** later steps (otherwise it is greedy).
+3. Subproblems **repeat** — the same arguments come back down different branches.
+
+Then the work is picking the state: the smallest tuple of values that determines the rest of the
+answer. Everything else follows from writing the recurrence honestly.
+
+### Memoization — cleanest with `@cache`
 
 ```python
-from functools import lru_cache
+from functools import cache
 
-@lru_cache(maxsize=None)
+@cache                          # Python 3.9+; lru_cache(maxsize=None) is the older spelling
 def fib(n):
     if n <= 1: return n
     return fib(n - 1) + fib(n - 2)
 
 # AVOID the mutable-default-argument anti-pattern:
 #   def fib(n, memo={}):  ← cache leaks across calls!
+
+# Arguments must be hashable — pass indices, not lists.
+# For grid states use two ints; for a set of chosen items use a bitmask or frozenset.
+```
+
+Define the cached helper **inside** the outer function so it closes over the input and the cache
+dies with the call:
+
+```python
+def solve(nums):
+    @cache
+    def dfs(i):
+        ...
+    return dfs(0)
 ```
 
 ### Tabulation
@@ -893,6 +1741,36 @@ def max_subarray(nums):
     return best
 ```
 
+### Linear DP — the stairs family
+
+One dimension, and `dp[i]` depends on a **fixed window** of earlier entries. Because the window is
+bounded, the array collapses to a couple of rolling variables — O(1) space.
+
+```python
+# Climbing Stairs — 1 or 2 steps at a time. Fibonacci in disguise.
+def climb_stairs(n):
+    prev2, prev1 = 1, 1
+    for _ in range(2, n + 1):
+        prev2, prev1 = prev1, prev1 + prev2
+    return prev1
+
+# Tribonacci — same shape, window of 3
+def tribonacci(n):
+    if n < 3:
+        return 0 if n == 0 else 1
+    a, b, c = 0, 1, 1
+    for _ in range(3, n + 1):
+        a, b, c = b, c, a + b + c
+    return c
+
+# Min Cost Climbing Stairs — pay when you LEAVE a step
+def min_cost_climbing_stairs(cost):
+    prev2 = prev1 = 0
+    for i in range(2, len(cost) + 1):
+        prev2, prev1 = prev1, min(prev1 + cost[i - 1], prev2 + cost[i - 2])
+    return prev1
+```
+
 ### House Robber (no two adjacent)
 
 ```python
@@ -901,6 +1779,162 @@ def rob(nums):
     for x in nums:
         prev2, prev1 = prev1, max(prev1, prev2 + x)
     return prev1
+
+# House Robber II — houses in a circle, so the first and last are adjacent.
+# Run the linear version twice: once excluding the last house, once excluding the first.
+def rob_circular(nums):
+    if len(nums) == 1:
+        return nums[0]
+    return max(rob(nums[:-1]), rob(nums[1:]))
+```
+
+### Minimum Cost For Tickets
+
+Non-constant transition: the window reaches back 1, 7 and 30 days rather than a fixed one or two
+slots, so index arithmetic replaces the rolling variables.
+
+```python
+from functools import cache
+
+def mincost_tickets(days, costs):
+    travel = set(days)
+    last = days[-1]
+
+    @cache
+    def dfs(day):
+        if day > last:
+            return 0
+        if day not in travel:
+            return dfs(day + 1)              # free: skip to the next day
+        return min(
+            costs[0] + dfs(day + 1),
+            costs[1] + dfs(day + 7),
+            costs[2] + dfs(day + 30),
+        )
+
+    return dfs(days[0])
+```
+
+### Partition DP — cutting a sequence into blocks
+
+State is "the best answer for the suffix starting at `i`", and the choice is **where the current
+block ends**. The inner loop extends the block one element at a time, maintaining whatever the block
+score needs (here a running max) so each extension is O(1).
+
+```python
+from functools import cache
+
+# Partition Array for Maximum Sum — every subarray of length <= k is replaced
+# by its maximum, and we maximise the total.
+def partition_array_for_maximum_sum(arr, k):
+    n = len(arr)
+
+    @cache
+    def dfs(i):
+        if i == n:
+            return 0
+        best = 0
+        block_max = 0
+        for j in range(i, min(i + k, n)):        # block is arr[i..j]
+            block_max = max(block_max, arr[j])
+            length = j - i + 1
+            best = max(best, block_max * length + dfs(j + 1))
+        return best
+
+    return dfs(0)
+```
+
+O(n·k). [Word Break](#word-break) and [Palindrome Partitioning — Min Cuts](#palindrome-partitioning--min-cuts)
+are the same shape with a different validity test and objective.
+
+### Grid DP
+
+Two dimensions, and `dp[r][c]` depends on the neighbours you are allowed to arrive from — usually
+`(r-1, c)` and `(r, c-1)`. Base cases live on the edges.
+
+```python
+from functools import cache
+
+# Unique Paths — count routes from top-left to bottom-right moving right/down
+def unique_paths(m, n):
+    dp = [1] * n
+    for _ in range(1, m):
+        for c in range(1, n):
+            dp[c] += dp[c - 1]               # dp[c] is the row above, dp[c-1] the left
+    return dp[n - 1]
+
+# With obstacles — a blocked cell contributes zero routes
+def unique_paths_with_obstacles(grid):
+    n = len(grid[0])
+    dp = [0] * n
+    dp[0] = 1
+    for row in grid:
+        for c in range(n):
+            if row[c] == 1:
+                dp[c] = 0
+            elif c > 0:
+                dp[c] += dp[c - 1]
+    return dp[-1]
+
+# Minimum Path Sum
+def min_path_sum(grid):
+    rows, cols = len(grid), len(grid[0])
+
+    @cache
+    def dfs(r, c):
+        if r == rows - 1 and c == cols - 1:
+            return grid[r][c]
+        if r >= rows or c >= cols:
+            return float('inf')
+        return grid[r][c] + min(dfs(r + 1, c), dfs(r, c + 1))
+
+    return dfs(0, 0)
+
+# Triangle — minimum top-to-bottom path; row r+1 has one more entry than row r
+def minimum_total(triangle):
+    @cache
+    def dfs(r, c):
+        if r == len(triangle):
+            return 0
+        return triangle[r][c] + min(dfs(r + 1, c), dfs(r + 1, c + 1))
+    return dfs(0, 0)
+
+# Maximal Square — dp[r][c] = side of the largest all-ones square ENDING at (r, c).
+# It is limited by the worst of its three neighbours, hence min(...) + 1.
+def maximal_square(matrix):
+    @cache
+    def dfs(r, c):
+        if r < 0 or c < 0 or matrix[r][c] == 0:
+            return 0
+        return 1 + min(dfs(r - 1, c), dfs(r, c - 1), dfs(r - 1, c - 1))
+
+    best = 0
+    for r in range(len(matrix)):
+        for c in range(len(matrix[0])):
+            best = max(best, dfs(r, c))
+    return best * best
+```
+
+**Dungeon Game — when you must solve it backwards.** The question is the *minimum starting health*,
+and health needed at a cell depends on what lies ahead, not behind. A forward scan cannot know it,
+so recurse from the destination: `need(r, c) = max(1, min(need ahead) - dungeon[r][c])`. The
+`max(1, ...)` enforces "never drop to 0 HP".
+
+```python
+from functools import cache
+
+def calculate_minimum_hp(dungeon):
+    last_row, last_col = len(dungeon) - 1, len(dungeon[0]) - 1
+
+    @cache
+    def dfs(r, c):
+        if r > last_row or c > last_col:
+            return float('inf')
+        if r == last_row and c == last_col:
+            return max(1, 1 - dungeon[r][c])
+        return max(1, min(dfs(r + 1, c), dfs(r, c + 1)) - dungeon[r][c])
+
+    return dfs(0, 0)
 ```
 
 ### Coin Change (min coins to make amount)
@@ -930,6 +1964,20 @@ def length_of_LIS(nums):
             tails[i] = x
     return len(tails)
 ```
+
+### Dual-sequence DP
+
+Two strings, state `(i, j)` = one index into each. Characters match → consume both and move
+diagonally; otherwise branch on which side to advance. Every problem below is that skeleton with a
+different objective.
+
+| Problem | On match | On mismatch |
+| --- | --- | --- |
+| Longest Common Subsequence | `1 + dp(i+1, j+1)` | `max(dp(i+1, j), dp(i, j+1))` |
+| Edit Distance | `dp(i+1, j+1)` | `1 + min(delete, insert, replace)` |
+| Distinct Subsequences | `dp(i+1, j+1) + dp(i+1, j)` | `dp(i+1, j)` |
+| Shortest Common Supersequence | take the char once | take the cheaper side |
+| Minimum Delete Sum | `dp(i+1, j+1)` | `min(cost of dropping either char)` |
 
 ### Longest Common Subsequence
 
@@ -965,6 +2013,73 @@ def min_distance(word1, word2):
     return dp[m][n]
 ```
 
+### Distinct Subsequences
+
+Count how many times `t` appears as a subsequence of `s`. On a match you may *use* the character or
+*skip* it — both branches count, so they add rather than max.
+
+```python
+from functools import cache
+
+def num_distinct(s, t):
+    @cache
+    def dfs(i, j):
+        if j == len(t):
+            return 1                     # matched all of t: one full subsequence
+        if i == len(s):
+            return 0                     # ran out of s with t unfinished
+        count = dfs(i + 1, j)            # skip s[i]
+        if s[i] == t[j]:
+            count += dfs(i + 1, j + 1)   # or use it
+        return count
+    return dfs(0, 0)
+```
+
+### Minimum Delete Sum
+
+Delete characters from both strings until they match, minimising the summed ASCII cost. Same
+skeleton, but the base case charges for the whole remaining tail instead of returning 0.
+
+```python
+from functools import cache
+
+def minimum_delete_sum(s1, s2):
+    @cache
+    def dfs(i, j):
+        if i == len(s1):
+            return sum(map(ord, s2[j:]))
+        if j == len(s2):
+            return sum(map(ord, s1[i:]))
+        if s1[i] == s2[j]:
+            return dfs(i + 1, j + 1)
+        return min(ord(s1[i]) + dfs(i + 1, j), ord(s2[j]) + dfs(i, j + 1))
+    return dfs(0, 0)
+```
+
+### Shortest Common Supersequence — returning the string, not its length
+
+When the answer is a reconstructed sequence, the recursion can return strings directly. It is
+clear but allocates heavily; the interview-grade version computes LCS lengths and walks the table
+backwards.
+
+```python
+from functools import cache
+
+def shortest_common_supersequence(str1, str2):
+    @cache
+    def dfs(i, j):
+        if i == len(str1):
+            return str2[j:]
+        if j == len(str2):
+            return str1[i:]
+        if str1[i] == str2[j]:
+            return str1[i] + dfs(i + 1, j + 1)      # one copy covers both
+        take1 = str1[i] + dfs(i + 1, j)
+        take2 = str2[j] + dfs(i, j + 1)
+        return take1 if len(take1) <= len(take2) else take2
+    return dfs(0, 0)
+```
+
 ### 0/1 Knapsack
 
 ```python
@@ -990,6 +2105,127 @@ def change(amount, coins):
         for i in range(c, amount + 1):
             dp[i] += dp[i - c]
     return dp[amount]
+```
+
+### The knapsack loop-direction rule
+
+Collapsed to one dimension, the *direction* of the capacity loop is what distinguishes the variants —
+get this backwards and you silently solve the other problem.
+
+```python
+# 0/1 — each item once. Iterate capacity DOWNWARD so dp[j - w] is still
+# the previous row (this item not yet used).
+for w, v in items:
+    for j in range(capacity, w - 1, -1):
+        dp[j] = max(dp[j], dp[j - w] + v)
+
+# Unbounded — unlimited copies. Iterate capacity UPWARD so dp[j - w] may
+# already include this item.
+for w, v in items:
+    for j in range(w, capacity + 1):
+        dp[j] = max(dp[j], dp[j - w] + v)
+```
+
+### Subset-sum variants
+
+Every one of these is 0/1 knapsack with a different accumulator.
+
+```python
+# Partition Equal Subset Sum — reachability instead of value
+def can_partition(nums):
+    total = sum(nums)
+    if total % 2:
+        return False
+    target = total // 2
+    reachable = {0}
+    for x in nums:
+        reachable |= {r + x for r in reachable if r + x <= target}
+    return target in reachable
+
+# Target Sum — assign + or - to every number so the result is `target`.
+# State is (index, running total); the two branches are the two signs.
+from functools import cache
+
+def find_target_sum_ways(nums, target):
+    @cache
+    def dfs(i, total):
+        if i == len(nums):
+            return 1 if total == target else 0
+        return dfs(i + 1, total + nums[i]) + dfs(i + 1, total - nums[i])
+    return dfs(0, 0)
+
+# Choosing signs is equivalent to choosing the subset P that gets a plus:
+#   sum(P) - (total - sum(P)) = target  ->  sum(P) = (total + target) / 2
+# so the same problem can be counted as a 0/1 subset-sum, which is what makes
+# the bounded-capacity table below applicable.
+def find_target_sum_ways_knapsack(nums, target):
+    total = sum(nums)
+    if (total + target) % 2 or abs(target) > total:
+        return 0
+    capacity = (total + target) // 2
+
+    dp = [0] * (capacity + 1)
+    dp[0] = 1
+    for x in nums:
+        for j in range(capacity, x - 1, -1):      # 0/1 -> downward
+            dp[j] += dp[j - x]
+    return dp[capacity]
+
+# Perfect Squares — unbounded knapsack where the "coins" are 1, 4, 9, 16, ...
+def num_squares(n):
+    dp = [float('inf')] * (n + 1)
+    dp[0] = 0
+    for i in range(1, n + 1):
+        k = 1
+        while k * k <= i:
+            dp[i] = min(dp[i], dp[i - k * k] + 1)
+            k += 1
+    return dp[n]
+```
+
+### Bounded Knapsack
+
+Each item has a quantity limit. The direct version adds a third loop over how many copies to take —
+O(n · capacity · quantity):
+
+```python
+def bounded_knapsack(items, capacity):      # items: (weight, value, quantity)
+    n = len(items)
+    dp = [[0] * (capacity + 1) for _ in range(n + 1)]
+    for i in range(1, n + 1):
+        weight, value, quantity = items[i - 1]
+        for j in range(capacity + 1):
+            best = dp[i - 1][j]                       # take 0 copies
+            for count in range(1, quantity + 1):
+                total_weight = count * weight
+                if total_weight > j:
+                    break
+                best = max(best, dp[i - 1][j - total_weight] + count * value)
+            dp[i][j] = best
+    return dp[n][capacity]
+```
+
+**Binary decomposition** removes that third loop. Split a quantity of `q` into chunks of size
+1, 2, 4, 8, … plus a remainder; any count from 0 to `q` is a subset of those chunks, so the problem
+becomes plain 0/1 knapsack over O(log q) synthetic items.
+
+```python
+def bounded_knapsack_binary(items, capacity):
+    expanded = []
+    for weight, value, quantity in items:
+        chunk = 1
+        while chunk <= quantity:
+            expanded.append((chunk * weight, chunk * value))
+            quantity -= chunk
+            chunk *= 2
+        if quantity > 0:
+            expanded.append((quantity * weight, quantity * value))
+
+    dp = [0] * (capacity + 1)
+    for w, v in expanded:
+        for j in range(capacity, w - 1, -1):          # 0/1 → downward
+            dp[j] = max(dp[j], dp[j - w] + v)
+    return dp[capacity]
 ```
 
 ### Word Break
@@ -1066,6 +2302,207 @@ def min_cut(s):
         else:
             cuts[i] = min(cuts[j] + 1 for j in range(i) if is_pal[j + 1][i])
     return cuts[n - 1]
+```
+
+### Interval DP
+
+State is a **range** `(i, j)` rather than a prefix, and the recurrence either shrinks the range from
+both ends or splits it at some `k`. Iterate by increasing length so shorter ranges are solved first.
+
+```python
+from functools import cache
+
+# Count Palindromic Substrings — shrink from both ends
+def count_palindromic_substrings(s):
+    @cache
+    def is_pal(i, j):
+        if i >= j:
+            return True
+        return s[i] == s[j] and is_pal(i + 1, j - 1)
+    return sum(is_pal(i, j) for i in range(len(s)) for j in range(i, len(s)))
+
+# Burst Balloons shape — split at k, where k is the LAST one handled in (i, j)
+def split_form(nums):
+    @cache
+    def dfs(i, j):
+        if i > j:
+            return 0
+        return max(gain(i, k, j) + dfs(i, k - 1) + dfs(k + 1, j)
+                   for k in range(i, j + 1))
+    return dfs(0, len(nums) - 1)
+```
+
+### Game Theory DP
+
+Two players alternate, both optimal. Model it from the current player's view and assume the opponent
+then leaves you the **worst** of your options — hence `min` nested inside `max`.
+
+```python
+from functools import cache
+
+# Coin Game — take from either end; return the best total the first player can secure
+def coin_game(coins):
+    @cache
+    def solve(i, j):
+        if i == j:
+            return coins[i]
+        if i + 1 == j:
+            return max(coins[i], coins[j])
+        # after our move the opponent picks an end, leaving us the min of what remains
+        take_left = coins[i] + min(solve(i + 2, j), solve(i + 1, j - 1))
+        take_right = coins[j] + min(solve(i + 1, j - 1), solve(i, j - 2))
+        return max(take_left, take_right)
+    return solve(0, len(coins) - 1)
+
+# Divisor Game — pure win/lose. You win if SOME move hands the opponent a loss.
+def divisor_game(n):
+    @cache
+    def wins(n):
+        return any(n % x == 0 and not wins(n - x) for x in range(1, n))
+    return wins(n)
+```
+
+### DP on a DAG
+
+Whenever the transitions are acyclic, memoised DFS *is* the DP — no explicit topological order
+needed, since recursion supplies one. Look for an ordering that guarantees acyclicity: strictly
+increasing values, strictly shorter strings, divisibility after sorting.
+
+```python
+from functools import cache
+
+# Longest Increasing Path in a Matrix — edges only point uphill, so no cycles
+def longest_increasing_path(matrix):
+    rows, cols = len(matrix), len(matrix[0])
+
+    @cache
+    def dfs(r, c):
+        best = 0
+        for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            nr, nc = r + dr, c + dc
+            if 0 <= nr < rows and 0 <= nc < cols and matrix[nr][nc] > matrix[r][c]:
+                best = max(best, dfs(nr, nc))
+        return best + 1
+
+    return max(dfs(r, c) for r in range(rows) for c in range(cols))
+
+# Longest String Chain — predecessor = this word with one character removed
+def longest_string_chain(words):
+    index_of = {w: i for i, w in enumerate(words)}
+
+    @cache
+    def solve(i):
+        word = words[i]
+        best = 0
+        for k in range(len(word)):
+            prev = word[:k] + word[k + 1:]
+            if prev in index_of:
+                best = max(best, solve(index_of[prev]))
+        return best + 1
+
+    return max(solve(i) for i in range(len(words)))
+
+# Largest Divisible Subset — sort first, then j < i can only precede i
+def largest_divisible_subset_len(nums):
+    nums.sort()
+
+    @cache
+    def dfs(i):
+        return max((1 + dfs(j) for j in range(i) if nums[i] % nums[j] == 0), default=1)
+
+    return max(dfs(i) for i in range(len(nums)))
+```
+
+The O(n²) [LIS](#longest-increasing-subsequence--on-log-n) recurrence is the same pattern; only LIS
+has the extra `bisect` trick that drops it to O(n log n).
+
+### Tree DP
+
+Post-order: solve the children, then combine at the parent. When the parent's choice depends on
+what the child *did*, return a **tuple of the child's cases** instead of a single number — one pass,
+no recomputation.
+
+```python
+# House Robber III — (best if we rob this node, best if we skip it)
+def rob_tree(root):
+    def dfs(node):
+        if not node:
+            return (0, 0)
+        left = dfs(node.left)
+        right = dfs(node.right)
+        rob = node.val + left[1] + right[1]      # robbing here forces skipping both children
+        skip = max(left) + max(right)            # skipping frees each child to do its best
+        return (rob, skip)
+    return max(dfs(root))
+
+# Longest downward path in a rooted tree — pass the parent to avoid walking back up
+def longest_path(graph, node, parent):
+    best = 0
+    for child in graph[node]:
+        if child != parent:
+            best = max(best, longest_path(graph, child, node) + 1)
+    return best
+```
+
+[Diameter of a Binary Tree](#trees) is the same trick: return the height, accumulate the best
+through-path in a `nonlocal`.
+
+### Bitmask DP
+
+When `n ≤ ~20`, a **subset of items** fits in one integer, which makes it usable as a DP state. Bit
+`i` set means item `i` is used.
+
+```python
+mask & (1 << i)        # is item i in the subset?
+mask | (1 << i)        # add item i
+mask & ~(1 << i)       # remove item i
+mask.bit_count()       # subset size (Python 3.10+)
+(1 << n) - 1           # the full set
+```
+
+```python
+from functools import cache
+
+# Assignment problem — worker k takes the kth task assigned, so the number of
+# set bits tells us which worker we are placing. No second state needed.
+def min_cost_assignment(cost):
+    n = len(cost)
+
+    @cache
+    def dp(mask):
+        worker = mask.bit_count()
+        if worker == n:
+            return 0
+        return min(cost[worker][task] + dp(mask | (1 << task))
+                   for task in range(n) if not mask & (1 << task))
+
+    return dp(0)
+```
+
+**Minimum cost to visit every node (TSP shape).** Here the state needs both the visited set *and*
+where you currently stand, because the next edge's cost depends on the current node: `dp[mask][cur]`,
+O(2ⁿ · n) states.
+
+```python
+from functools import cache
+
+def min_cost_to_visit_every_node(graph):
+    n = len(graph)
+    FULL = (1 << n) - 1
+    INF = 0x3F3F3F3F
+
+    @cache
+    def dfs(mask, cur):
+        if mask == FULL:
+            return 0
+        best = INF
+        for nxt in range(n):
+            if not mask & (1 << nxt) and graph[cur][nxt]:
+                best = min(best, graph[cur][nxt] + dfs(mask | (1 << nxt), nxt))
+        return best
+
+    result = dfs(1, 0)                 # start at node 0, already visited
+    return -1 if result >= INF else result
 ```
 
 ---
@@ -1163,6 +2600,26 @@ def mod_inverse(a, m):
 
 # Common mod for combinatorics problems
 MOD = 10**9 + 7
+```
+
+### Nth prime — sieve without knowing the bound
+
+The sieve needs an upper limit, but "give me the nth prime" does not supply one. Either sieve a
+generous fixed bound and count as you go, or use the estimate `p_n < n(ln n + ln ln n)` for `n ≥ 6`.
+
+```python
+def nth_prime(n, limit=100_001):
+    is_prime = [True] * limit
+    is_prime[0] = is_prime[1] = False
+    count = 0
+    for i in range(2, limit):
+        if is_prime[i]:
+            count += 1
+            if count == n:
+                return i
+            for j in range(i * i, limit, i):
+                is_prime[j] = False
+    return -1                       # limit was too small
 ```
 
 ---
@@ -1288,10 +2745,62 @@ def level_order(root):
         result.append(level)
     return result
 
+# Zigzag level order — same loop, reverse alternate levels.
+# Collecting then reversing beats pushing children in a different order:
+# the traversal stays untouched and only the output flips.
+def zigzag_level_order(root):
+    if not root: return []
+    from collections import deque
+    queue = deque([root])
+    result = []
+    reverse = False
+    while queue:
+        level = []
+        for _ in range(len(queue)):
+            node = queue.popleft()
+            level.append(node.val)
+            if node.left:  queue.append(node.left)
+            if node.right: queue.append(node.right)
+        result.append(level[::-1] if reverse else level)
+        reverse = not reverse
+    return result
+
+# Right side view — the last node of each level. `queue[-1]` reads it
+# before the level is consumed, so no per-level list is needed.
+def right_side_view(root):
+    if not root: return []
+    from collections import deque
+    queue = deque([root])
+    result = []
+    while queue:
+        result.append(queue[-1].val)
+        for _ in range(len(queue)):
+            node = queue.popleft()
+            if node.left:  queue.append(node.left)
+            if node.right: queue.append(node.right)
+    return result
+
 # Max depth
 def max_depth(root):
     if not root: return 0
     return 1 + max(max_depth(root.left), max_depth(root.right))
+
+# Min depth — depth of the shallowest LEAF. BFS wins here: it returns at the
+# first leaf found, while DFS must explore everything. Note the asymmetry with
+# max_depth — a node with one child is not a leaf, so plain min() is wrong.
+def min_depth(root):
+    if not root: return 0
+    from collections import deque
+    queue = deque([root])
+    depth = 1
+    while queue:
+        for _ in range(len(queue)):
+            node = queue.popleft()
+            if not node.left and not node.right:
+                return depth
+            if node.left:  queue.append(node.left)
+            if node.right: queue.append(node.right)
+        depth += 1
 
 # Is balanced — return (height, balanced) so it's one pass
 def is_balanced(root):
@@ -1427,6 +2936,55 @@ def lca_bst(root, p, q):
             return root
 ```
 
+### Closest BST Values II — two in-order iterators
+
+Find the `k` values nearest to `x`. Flattening the tree is O(n); this is O(h + k). Keep two stacks
+seeded along the search path — one that walks *backwards* through the in-order sequence
+(predecessors), one *forwards* (successors) — then merge them by distance to `x`, exactly like
+merging two sorted lists from a shared midpoint.
+
+```python
+from collections import deque
+
+def closest_values(root, x, k):
+    pred, succ = [], []                  # stacks of nodes
+
+    node = root
+    while node:                          # seed both stacks along the search path
+        if node.val <= x:
+            pred.append(node)
+            node = node.right
+        else:
+            succ.append(node)
+            node = node.left
+
+    def advance_pred():                  # step to the next-smaller value
+        n = pred.pop().left
+        while n:
+            pred.append(n)
+            n = n.right
+
+    def advance_succ():                  # step to the next-larger value
+        n = succ.pop().right
+        while n:
+            succ.append(n)
+            n = n.left
+
+    out = deque()
+    for _ in range(k):
+        if not pred and not succ:
+            break                        # k exceeded the tree size
+        take_pred = pred and (not succ or (x - pred[-1].val) <= (succ[-1].val - x))
+        if take_pred:
+            out.appendleft(pred[-1].val)
+            advance_pred()
+        else:
+            out.append(succ[-1].val)
+            advance_succ()
+
+    return list(out)
+```
+
 ---
 
 ## Matrix
@@ -1498,6 +3056,32 @@ def set_zeroes(matrix):
         for c in range(cols): matrix[0][c] = 0
     if first_col_zero:
         for r in range(rows): matrix[r][0] = 0
+```
+
+### Sparse matrix multiplication
+
+The textbook triple loop does `n·m·p` multiplications regardless of content. When most entries are
+zero, reorder the loops to `i → k → j` so that a zero in `A[i][k]` lets you skip an entire inner
+loop, and pre-index the non-zeros of `B` by row.
+
+```python
+def multiply(a, b):
+    if not a or not a[0] or not b or not b[0]:
+        return []
+
+    n, m, p = len(a), len(a[0]), len(b[0])
+
+    # b_nz[k] = [(col, value), ...] — only the non-zero entries of row k
+    b_nz = [[(j, b[k][j]) for j in range(p) if b[k][j]] for k in range(m)]
+
+    result = [[0] * p for _ in range(n)]
+    for i in range(n):
+        row_out = result[i]
+        for k, a_ik in enumerate(a[i]):
+            if a_ik:                            # skip zeros in A: whole inner loop avoided
+                for j, b_kj in b_nz[k]:         # skip zeros in B
+                    row_out[j] += a_ik * b_kj
+    return result
 ```
 
 ---
@@ -1658,6 +3242,220 @@ def bellman_ford(edges, n, start):
     return dist
 ```
 
+### Implicit graphs — BFS over a state space
+
+The hardest part of these is *seeing* the graph. There is no adjacency list: a **node is a
+configuration**, and an **edge is a legal move**. Once you name those two things, it is ordinary BFS.
+
+| Problem | Node | Edge |
+| --- | --- | --- |
+| Word Ladder | a word | change one letter, result must be in the dictionary |
+| Open the Lock | a 4-digit combination | turn one wheel ±1 |
+| Sliding Puzzle | the board layout | swap the blank with a neighbour |
+| Knight's shortest path | a square | one L-shaped move |
+
+Requirements: states must be **hashable** for the `visited` set (freeze grids with
+`tuple(tuple(row) for row in grid)`), and you must mark visited **on enqueue**, not on dequeue.
+
+```python
+from collections import deque
+
+# Word Ladder — generate neighbours rather than scanning the whole word list.
+# Comparing against every word is O(N·L) per step; mutating each position over
+# 26 letters is O(26·L) and independent of the dictionary size.
+def word_ladder(begin, end, word_list):
+    words = set(word_list)
+    words.discard(begin)
+    queue = deque([begin])
+    steps = 0
+
+    while queue:
+        for _ in range(len(queue)):
+            word = queue.popleft()
+            if word == end:
+                return steps
+            for i in range(len(word)):
+                for ch in 'abcdefghijklmnopqrstuvwxyz':
+                    candidate = word[:i] + ch + word[i + 1:]
+                    if candidate in words:
+                        words.remove(candidate)      # removing == marking visited
+                        queue.append(candidate)
+        steps += 1
+    return -1
+
+# Sliding Puzzle — the board is the state; freeze it to make it hashable
+def sliding_puzzle(board, target=((1, 2, 3), (4, 5, 0))):
+    start = tuple(tuple(row) for row in board)
+    if start == target:
+        return 0
+
+    queue = deque([start])
+    visited = {start}
+    distance = 0
+
+    while queue:
+        for _ in range(len(queue)):
+            state = queue.popleft()
+            if state == target:
+                return distance
+
+            r, c = next((i, j)
+                        for i, row in enumerate(state)
+                        for j, v in enumerate(row) if v == 0)
+
+            for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                nr, nc = r + dr, c + dc
+                if 0 <= nr < len(state) and 0 <= nc < len(state[0]):
+                    grid = [list(row) for row in state]
+                    grid[r][c], grid[nr][nc] = grid[nr][nc], grid[r][c]
+                    nxt = tuple(tuple(row) for row in grid)
+                    if nxt not in visited:
+                        visited.add(nxt)
+                        queue.append(nxt)
+        distance += 1
+    return -1
+```
+
+**Open the Lock** is the same loop with `('0000',)` as the start, neighbours from turning each wheel
+up or down, and the deadends pre-loaded into `visited`.
+
+### Reverse the search direction
+
+"Which cells can reach the border?" is expensive from every cell but cheap from the border — flip
+the edges and run one traversal per target set, then intersect.
+
+```python
+# Pacific Atlantic Water Flow — walk UPHILL inward from each ocean's edges.
+# Cells reached from both edge sets are the answer.
+def pacific_atlantic(heights):
+    if not heights or not heights[0]:
+        return []
+    rows, cols = len(heights), len(heights[0])
+    pacific, atlantic = set(), set()
+
+    def dfs(r, c, visited, prev_height):
+        if (r, c) in visited or not (0 <= r < rows and 0 <= c < cols):
+            return
+        if heights[r][c] < prev_height:          # water only flows downhill,
+            return                               # so going inward we must not descend
+        visited.add((r, c))
+        for nr, nc in ((r + 1, c), (r - 1, c), (r, c + 1), (r, c - 1)):
+            dfs(nr, nc, visited, heights[r][c])
+
+    for c in range(cols):
+        dfs(0, c, pacific, heights[0][c])
+        dfs(rows - 1, c, atlantic, heights[rows - 1][c])
+    for r in range(rows):
+        dfs(r, 0, pacific, heights[r][0])
+        dfs(r, cols - 1, atlantic, heights[r][cols - 1])
+
+    return [[r, c] for r, c in pacific & atlantic]
+```
+
+### Clone Graph
+
+Traverse while building copies. The `old → new` dict does double duty: it is the memo *and* the
+visited set, which is what stops cycles from recursing forever.
+
+```python
+def clone_graph(node):
+    if not node:
+        return None
+    clones = {}
+
+    def dfs(cur):
+        if cur in clones:
+            return clones[cur]
+        copy = Node(cur.val)
+        clones[cur] = copy                       # register BEFORE recursing
+        copy.neighbors = [dfs(n) for n in cur.neighbors]
+        return copy
+
+    return dfs(node)
+```
+
+### Topological sort with a tie-break
+
+Kahn's algorithm with a **heap** instead of a queue yields the lexicographically smallest valid
+order. Everything else is unchanged.
+
+```python
+import heapq
+
+def alien_order(words):
+    graph = {c: set() for word in words for c in word}
+    indegree = {c: 0 for c in graph}
+
+    for first, second in zip(words, words[1:]):
+        for a, b in zip(first, second):
+            if a != b:
+                if b not in graph[a]:
+                    graph[a].add(b)
+                    indegree[b] += 1
+                break
+        else:
+            if len(first) > len(second):         # "abc" before "ab" is invalid
+                return ""
+
+    heap = [c for c in indegree if indegree[c] == 0]
+    heapq.heapify(heap)
+    order = []
+    while heap:
+        c = heapq.heappop(heap)
+        order.append(c)
+        for nxt in graph[c]:
+            indegree[nxt] -= 1
+            if indegree[nxt] == 0:
+                heapq.heappush(heap, nxt)
+
+    return ''.join(order) if len(order) == len(graph) else ""   # short = cycle
+```
+
+### Minimum Spanning Tree
+
+**Kruskal** — sort every edge by weight, take it if its endpoints are not already connected. The
+"already connected" test is [Union-Find](#union-find). Stop after `n - 1` edges.
+
+```python
+def minimum_spanning_tree(n, edges):        # edges: (weight, a, b)
+    edges.sort()
+    dsu = UnionFind(n)
+    total = taken = 0
+    for weight, a, b in edges:
+        if dsu.find(a) != dsu.find(b):
+            dsu.union(a, b)
+            total += weight
+            taken += 1
+            if taken == n - 1:
+                break
+    return total
+```
+
+O(E log E), dominated by the sort. If the graph is disconnected the same loop returns a **minimum
+spanning forest** — just drop the early exit and report `taken` alongside the total.
+
+**Prim** — grow one tree, always taking the cheapest edge leaving it. Better on dense graphs.
+
+```python
+import heapq
+
+def prim(graph, start=0):                   # graph[node] = [(neighbor, weight), ...]
+    visited = {start}
+    heap = [(w, v) for v, w in graph[start]]
+    heapq.heapify(heap)
+    total = 0
+    while heap and len(visited) < len(graph):
+        weight, node = heapq.heappop(heap)
+        if node in visited:
+            continue                        # stale entry
+        visited.add(node)
+        total += weight
+        for nxt, w in graph[node]:
+            if nxt not in visited:
+                heapq.heappush(heap, (w, nxt))
+    return total
+```
+
 ---
 
 ## Trie
@@ -1694,6 +3492,139 @@ class Trie:
 ```
 
 Common use cases: prefix queries, autocomplete, word search in grid (combine with DFS), longest common prefix.
+
+### Autocomplete and prefix counts
+
+Two small extensions of the same node. For autocomplete, walk to the prefix node and DFS everything
+beneath it. For "how many words start with this prefix", maintain a counter on every node you pass
+through during insert — then the query is O(len(prefix)) with no traversal at all.
+
+```python
+class CountingTrieNode:
+    def __init__(self):
+        self.children = {}
+        self.words_through = 0        # words passing through this node
+        self.is_end = False
+
+def insert(root, word):
+    node = root
+    for c in word:
+        node = node.children.setdefault(c, CountingTrieNode())
+        node.words_through += 1
+    node.is_end = True
+
+def count_prefix(root, prefix):
+    node = root
+    for c in prefix:
+        if c not in node.children:
+            return 0
+        node = node.children[c]
+    return node.words_through
+
+def autocomplete(root, prefix):
+    node = root
+    for c in prefix:
+        if c not in node.children:
+            return []
+        node = node.children[c]
+
+    out = []
+    def collect(node, path):
+        if node.is_end:
+            out.append(prefix + ''.join(path))
+        for c, child in node.children.items():
+            path.append(c)
+            collect(child, path)
+            path.pop()
+    collect(node, [])
+    return out
+```
+
+### Wildcard search — `.` matches any character
+
+A concrete character is a lookup; a `.` forks into every child. The recursion is over
+`(node, index)` rather than over the string alone.
+
+```python
+class WordDictionary:                    # reuses TrieNode from the section above
+    def __init__(self):
+        self.root = TrieNode()
+
+    def add(self, word):
+        node = self.root
+        for c in word:
+            node = node.children.setdefault(c, TrieNode())
+        node.is_end = True
+
+    def search(self, pattern):
+        def match(node, i):
+            if i == len(pattern):
+                return node.is_end
+            c = pattern[i]
+            if c == '.':
+                return any(match(child, i + 1) for child in node.children.values())
+            child = node.children.get(c)
+            return child is not None and match(child, i + 1)
+
+        return match(self.root, 0)
+```
+
+### Word Search II — trie + grid DFS
+
+Searching the grid once per word is O(words × cells × 4^L). Instead put *all* the words in a trie
+and walk the grid once, advancing the trie node in lockstep with the path. A path dies the moment
+it leaves the trie.
+
+Two details do the heavy lifting: storing the whole word on its terminal node (so no path string
+has to be rebuilt), and **pruning exhausted branches** out of the trie so later cells stop
+re-exploring dead subtrees.
+
+```python
+class _Node:
+    def __init__(self):
+        self.children = {}
+        self.word = None                     # the full word, if one ends here
+
+def word_search_ii(board, words):
+    if not board or not board[0]:
+        return []
+
+    root = _Node()
+    for word in words:
+        node = root
+        for c in word:
+            node = node.children.setdefault(c, _Node())
+        node.word = word
+
+    rows, cols = len(board), len(board[0])
+    grid = [list(row) for row in board]
+    found = set()
+
+    def dfs(r, c, node):
+        ch = grid[r][c]
+        child = node.children.get(ch)
+        if child is None:
+            return
+
+        if child.word is not None:
+            found.add(child.word)
+            child.word = None                # don't re-find the same word
+
+        grid[r][c] = '#'                     # mark visited on the board itself
+        for nr, nc in ((r + 1, c), (r - 1, c), (r, c + 1), (r, c - 1)):
+            if 0 <= nr < rows and 0 <= nc < cols and grid[nr][nc] != '#':
+                dfs(nr, nc, child)
+        grid[r][c] = ch
+
+        if not child.children:               # dead end — prune it from the trie
+            del node.children[ch]
+
+    for r in range(rows):
+        for c in range(cols):
+            dfs(r, c, root)
+
+    return [w for w in words if w in found]
+```
 
 ---
 
@@ -1741,7 +3672,147 @@ def count_components(n, edges):
     return uf.components
 ```
 
-**When to reach for Union-Find:** connectivity queries, dynamic component counting, cycle detection in undirected graphs, Kruskal's MST.
+### Dict-backed DSU — for non-integer elements
+
+When the elements are strings, coordinates or e-mail addresses, back the parent map with a dict so
+nodes spring into existence on first touch. No `n` needed up front.
+
+```python
+class UnionFind:
+    def __init__(self):
+        self.id = {}
+
+    def find(self, x):
+        y = self.id.get(x, x)          # unseen elements are their own root
+        if y != x:
+            self.id[x] = y = self.find(y)
+        return y
+
+    def union(self, x, y):
+        self.id[self.find(x)] = self.find(y)
+```
+
+Tracking **component sizes** costs one more dict: keep `size[root]`, and on a successful union add
+the smaller root's size into the larger's. That gives "size of the component containing x" in O(α(n))
+and makes union-by-size available at the same time.
+
+### Accounts Merge shape
+
+The common application: union things that share an attribute, then group by root.
+
+```python
+from collections import defaultdict
+
+def accounts_merge(accounts):
+    uf = UnionFind()
+    owner = {}
+    for name, *emails in accounts:
+        for email in emails:
+            uf.union(emails[0], email)       # all e-mails of one account are connected
+            owner[email] = name
+
+    groups = defaultdict(list)
+    for email in owner:
+        groups[uf.find(email)].append(email)
+
+    return [[owner[root]] + sorted(emails) for root, emails in groups.items()]
+```
+
+### Offline / reverse Union-Find
+
+DSU can merge but cannot split, so a problem that **removes** edges over time looks impossible.
+Process the queries backwards: deletions in reverse order are insertions. Answer the reversed
+sequence, then reverse the answers.
+
+```python
+# Connected components after each edge removal
+def components_after_removals(n, breaks):
+    uf = UnionFind()
+    out = []
+    for a, b in reversed(breaks):
+        out.append(n)                        # record the state BEFORE re-adding
+        if uf.find(a) != uf.find(b):
+            uf.union(a, b)
+            n -= 1                           # one merge = one fewer component
+    out.reverse()
+    return out
+```
+
+**When to reach for Union-Find:** connectivity queries, dynamic component counting, cycle detection in undirected graphs, Kruskal's MST, and any "edges only ever get added" timeline (reverse the input if they only get removed).
+
+---
+
+## Segment Tree
+
+For **range queries with point updates** on a mutable array. A prefix-sum array answers range sums
+in O(1) but costs O(n) per update; a segment tree makes both O(log n).
+
+Stored as a flat array with `4n` slots (a safe upper bound). Node `cur` covers `[cur_left, cur_right]`;
+its children are `2*cur` and `2*cur + 1`. Indexing starts at 1 so the arithmetic works.
+
+```python
+class SegmentTree:
+    def __init__(self, arr):
+        self.n = len(arr)
+        self.tree = [0] * (4 * self.n)
+        for i, v in enumerate(arr):
+            self.update(1, 0, self.n - 1, i, v)
+
+    # walk down to the leaf for idx, then recombine on the way back up
+    def update(self, cur, cur_left, cur_right, idx, val):
+        if cur_left == cur_right:
+            self.tree[cur] = val
+            return
+        mid = (cur_left + cur_right) // 2
+        if idx <= mid:
+            self.update(cur * 2, cur_left, mid, idx, val)
+        else:
+            self.update(cur * 2 + 1, mid + 1, cur_right, idx, val)
+        self.tree[cur] = self.tree[cur * 2] + self.tree[cur * 2 + 1]
+
+    def query(self, cur, cur_left, cur_right, query_left, query_right):
+        if cur_left > query_right or cur_right < query_left:
+            return 0                                     # disjoint — identity element
+        if query_left <= cur_left and cur_right <= query_right:
+            return self.tree[cur]                        # fully covered
+        mid = (cur_left + cur_right) // 2                # partial — split
+        return (self.query(cur * 2, cur_left, mid, query_left, query_right)
+                + self.query(cur * 2 + 1, mid + 1, cur_right, query_left, query_right))
+```
+
+Call it with the full range: `tree.query(1, 0, n - 1, l, r)` and `tree.update(1, 0, n - 1, i, v)`.
+
+**Changing the operation.** Swap the combine step and the disjoint-case identity together — they
+must agree, or partial overlaps silently return wrong answers:
+
+| Query | Combine | Identity |
+| --- | --- | --- |
+| sum | `left + right` | `0` |
+| max | `max(left, right)` | `-inf` (or `0` if all values are non-negative) |
+| min | `min(left, right)` | `inf` |
+| gcd | `math.gcd(left, right)` | `0` |
+
+For a range-max tree, exactly three lines of the class above change:
+
+```python
+def update(self, cur, cur_left, cur_right, idx, val):
+    ...
+    # recombine after recursing
+    self.tree[cur] = max(self.tree[cur * 2], self.tree[cur * 2 + 1])
+
+def query(self, cur, cur_left, cur_right, query_left, query_right):
+    if cur_left > query_right or cur_right < query_left:
+        return float('-inf')                             # identity, not 0
+    ...
+    # partial overlap
+    return max(self.query(cur * 2, cur_left, mid, query_left, query_right),
+               self.query(cur * 2 + 1, mid + 1, cur_right, query_left, query_right))
+```
+
+**When to reach for it:** repeated range aggregate queries interleaved with updates. If the array
+never changes, use [prefix sums](#prefix-sum). If you only need prefix aggregates with updates, a
+Binary Indexed (Fenwick) tree is shorter to write. Range *updates* need lazy propagation, which is
+rarely expected in an interview.
 
 ---
 
