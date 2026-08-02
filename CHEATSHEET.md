@@ -105,7 +105,8 @@ bin(10)[2:]             # '1010' (drop the '0b' prefix)
 # Sentinels
 MOD = 10**9 + 7         # standard modulus for "answer may be large, return it mod ..."
 INF = float('inf')      # or math.inf
-INF_INT = 0x3F3F3F3F    # int-only "infinity": big, but 2 * INF_INT still won't overflow
+INF_INT = 0x3F3F3F3F    # int-only "infinity" — keeps a dp table all-int, and unlike
+                        # float inf, INF_INT + w is still a comparable number
 ```
 
 ---
@@ -733,7 +734,8 @@ bisect.bisect_left(data, 4, key=lambda x: x[0])
 
 ```python
 # Third-party, but pre-installed on LeetCode / HackerRank.
-# Fills the gap bisect + list can't: O(log n) add/remove (insort is O(n) due to list shift).
+# Fills the gap bisect + list can't: O(log n) add/remove
+# (insort is O(n) — the list shift dominates).
 from sortedcontainers import SortedList, SortedDict, SortedSet
 
 sl = SortedList([3, 1, 4, 1, 5])  # stays sorted: [1, 1, 3, 4, 5]
@@ -915,14 +917,15 @@ class Person:
     def __repr__(self):                # used by repr() and the REPL
         return f"Person('{self.name}', {self.age})"
 
-    # Comparison — needed for sort/heap on custom objects
-    def __eq__(self, other):
-        return self.age == other.age
-
-    def __lt__(self, other):
+    def __lt__(self, other):           # __lt__ alone is enough for sort / heapq
         return self.age < other.age
 
-    def __hash__(self):                # needed if used as dict key / set element
+    # __eq__ and __hash__ must compare the SAME fields. Mismatch them and two
+    # equal objects hash differently, so a set/dict silently keeps both.
+    def __eq__(self, other):
+        return (self.name, self.age) == (other.name, other.age)
+
+    def __hash__(self):                # defining __eq__ sets __hash__ to None
         return hash((self.name, self.age))
 
 # Inheritance
