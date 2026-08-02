@@ -1,27 +1,27 @@
 def count_smaller(nums: list[int]) -> list[int]:
-    if not nums:
-        return []
-
-    # Compress values to ranks 1..k so they can index a Fenwick tree.
-    ranks = {v: i + 1 for i, v in enumerate(sorted(set(nums)))}
-    size = len(ranks)
-    tree = [0] * (size + 1)
-
-    def update(i: int) -> None:  # record one occurrence of rank i
-        while i <= size:
-            tree[i] += 1
-            i += i & -i
-
-    def query(i: int) -> int:  # how many recorded ranks are <= i
-        total = 0
-        while i > 0:
-            total += tree[i]
-            i -= i & -i
-        return total
-
     counts = [0] * len(nums)
-    for i in range(len(nums) - 1, -1, -1):
-        r = ranks[nums[i]]
-        counts[i] = query(r - 1)  # r - 1 keeps it strictly smaller
-        update(r)
+
+    def sort(pairs):
+        if len(pairs) <= 1:
+            return pairs
+        mid = len(pairs) // 2
+        left, right = sort(pairs[:mid]), sort(pairs[mid:])
+
+        merged = []
+        l = r = 0
+        while l < len(left) and r < len(right):
+            if left[l][1] <= right[r][1]:  # ties go left: equal is not smaller
+                counts[left[l][0]] += r
+                merged.append(left[l])
+                l += 1
+            else:
+                merged.append(right[r])
+                r += 1
+        for i in range(l, len(left)):  # left leftovers: all of right was smaller
+            counts[left[i][0]] += r
+        merged.extend(left[l:])
+        merged.extend(right[r:])
+        return merged
+
+    sort(list(enumerate(nums)))
     return counts
