@@ -1,5 +1,6 @@
 from functools import cache
 
+
 def coin_game(coins: list[int]) -> int:
 
     @cache
