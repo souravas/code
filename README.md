@@ -31,13 +31,13 @@ Algorithm templates — full implementations you can adapt. Between them, the se
 technique used anywhere in `algomonster/` and `neetcode/`.
 
 - **Sorting:** built-in sort and `cmp_to_key`, merge sort (and the reusable merge step), the O(n²) sorts
-- **Searching:** Binary Search (both patterns), Binary Search on Answer
+- **Searching:** Binary Search (both patterns), rotated sorted array, 2D matrix, Binary Search on Answer
 - **Two-pointer family:** Two Pointers, Fast & Slow Pointers, Sliding Window (variable, fixed-window match counter, shrink-on-duplicate)
-- **Array tricks:** Prefix Sum (1D & 2D), Hashing, Monotonic Stack, Intervals, Line Sweep
+- **Array tricks:** Prefix Sum (1D & 2D) and prefix products, Hashing, Monotonic Stack, Intervals, Line Sweep
 - **Stacks:** monotonic, parsing (RPN, calculator), design (Min Stack), Car Fleet
 - **Top-K:** Heap (top-K, k-closest, merge-K, median of stream, streaming kth-largest), Quickselect
 - **Strategies:** Divide & Conquer (count-of-smaller, skyline), Greedy, Backtracking, Dynamic Programming
-- **DP families:** linear/stairs, grid (incl. solving backwards), dual-sequence, knapsack (0/1, unbounded, bounded), interval, game theory, DAG, tree, bitmask
+- **DP families:** linear/stairs, partition, grid (incl. solving backwards), dual-sequence, knapsack (0/1, unbounded, bounded), interval, game theory, DAG, tree, bitmask
 - **Bits & math:** Bit Manipulation, Math / Number Theory (sieve, nth prime, modpow)
 - **Data structures:** Linked Lists, Trees, BSTs, Matrix, Graphs, Trie, Union-Find, Segment Tree
 - **Graphs in depth:** DFS/BFS, multi-source and 0-1 BFS, implicit state-space BFS (word ladder, sliding puzzle), topological sort, Dijkstra, Bellman-Ford, MST (Kruskal & Prim)
