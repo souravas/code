@@ -96,6 +96,16 @@ bin(10)                 # '0b1010'
 oct(10)                 # '0o12'
 hex(255)                # '0xff'
 bin(10)[2:]             # '1010' (drop the '0b' prefix)
+
+# Bit introspection (operators and tricks: PATTERNS.md → Bit Manipulation)
+(21).bit_length()       # 5 — bits needed to represent 21
+(21).bit_count()        # 3 — set bits (Python 3.10+); before that: bin(21).count('1')
+1 << 4                  # 16 — mask with only bit 4 set
+
+# Sentinels
+MOD = 10**9 + 7         # standard modulus for "answer may be large, return it mod ..."
+INF = float('inf')      # or math.inf
+INF_INT = 0x3F3F3F3F    # int-only "infinity": big, but 2 * INF_INT still won't overflow
 ```
 
 ---
@@ -109,13 +119,21 @@ s.split()                   # ['python', 'is', 'good'] (splits by whitespace)
 s.split('#')                # splits by delimiter
 ''.join(my_list)            # join list elements into string
 
+s.rsplit('#', 1)            # split from the right, at most 1 split
+s.partition('#')            # ('before', '#', 'after') — always a 3-tuple
+s.splitlines()
+
 # Search and replace
 s.find('is')                # index or -1 if not found
 s.find('is', start, end)    # search in substring
+s.index('is')               # like find, but raises ValueError if absent
+s.count('o')                # non-overlapping occurrences
 s.replace('good', 'great')  # replace all occurrences
 s.strip()                   # remove whitespace from both ends
 s.strip(' #')               # remove specific characters
 s.lstrip(), s.rstrip()      # strip one side only
+s.removeprefix('py')        # Python 3.9+ — strips once, not a char set
+s.removesuffix('od')
 
 # Case operations
 s.upper(), s.lower()
@@ -138,6 +156,17 @@ len(s)
 s[0:3]                      # substring (slicing)
 sorted(s)                   # returns sorted list of chars
 ''.join(sorted(s))          # sort chars in string
+
+# Replace one character at index i — strings are immutable, so rebuild
+s[:i] + c + s[i + 1:]       # the workhorse of word-ladder / open-lock BFS
+
+# Padding / alignment
+s.zfill(4)                  # '0012' — zero-pad on the left
+s.rjust(4, '0'), s.ljust(4), s.center(4)
+
+# Bulk character mapping — one pass, faster than chained replace()
+s.translate(str.maketrans('abc', 'xyz'))        # a→x, b→y, c→z
+s.translate(str.maketrans('', '', 'aeiou'))     # third arg = delete these
 
 # ASCII
 ord('a')                    # 97
@@ -352,6 +381,10 @@ a, *b, c = (1, 2, 3, 4)    # a=1, b=[2,3], c=4
 
 # Tuples as dict keys (immutable)
 d = {(0, 1): 'value'}
+
+# Freeze a grid so it can live in a `visited` set — BFS over board states
+state = tuple(tuple(row) for row in grid)
+grid = [list(row) for row in state]        # thaw it back to mutate
 ```
 
 ---
@@ -649,6 +682,10 @@ list(itertools.combinations([1, 2, 3, 4], 2))            # choose 2
 list(itertools.combinations_with_replacement([1, 2], 2)) # with repetition
 list(itertools.product([1, 2], [3, 4]))                  # cartesian product
 list(itertools.product([0, 1], repeat=3))                # all 3-bit binary
+
+# Adjacent pairs (Python 3.10+)
+list(itertools.pairwise([1, 2, 3, 4]))                   # [(1,2), (2,3), (3,4)]
+list(zip(xs, xs[1:]))                                    # pre-3.10 equivalent
 
 # Chaining / grouping
 list(itertools.chain([1, 2], [3, 4]))                    # flatten one level
@@ -962,6 +999,18 @@ transposed = list(zip(*matrix))        # rows ↔ columns
 
 # Rotate matrix 90° clockwise
 rotated = [list(row) for row in zip(*matrix[::-1])]
+
+# argmax / argmin — max/min with a key, returns the item (or its index)
+best = max(candidates, key=score)
+best_i = max(range(len(nums)), key=nums.__getitem__)
+
+# Short-circuiting checks over a generator
+if any(x < 0 for x in nums): ...
+if all(c.isdigit() for c in s): ...
+
+# Coordinate compression — dedup, sort, then work in index space
+xs = sorted({x for lo, hi in intervals for x in (lo, hi)})
+rank = {x: i for i, x in enumerate(xs)}
 ```
 
 ---
