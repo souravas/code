@@ -37,20 +37,15 @@ Algorithm templates and patterns. For syntax lookups, see [CHEATSHEET.md](CHEATS
 
 ## Sorting
 
+Python's built-in sort is Timsort — O(n log n), stable, and almost always the right answer. The
+algorithmic decision is the **key**, not the sort. (For `sort` / `sorted` syntax see
+[CHEATSHEET.md → Lists](CHEATSHEET.md#lists).)
+
 ```python
-# Python's built-in sort is Timsort: O(n log n), stable
+# A tuple key is a priority order — negate a term to flip that one term's direction
+arr.sort(key=lambda x: (x[0], -x[1]))   # x[0] ascending, ties broken by x[1] descending
 
-arr.sort()                      # in-place ascending
-sorted(arr)                     # new sorted list
-
-# Custom key
-arr.sort(key=len)
-arr.sort(key=lambda x: (x[0], -x[1]))   # multi-criteria: x[0] asc, x[1] desc
-
-# Sort dict by values
-sorted(d.items(), key=lambda x: x[1])
-
-# Top-k by frequency
+# Top-k by frequency — Counter already does the sorting
 from collections import Counter
 top_k = [item for item, _ in Counter(arr).most_common(k)]
 ```
@@ -218,6 +213,77 @@ def find_last(arr, target):
 ```
 
 Or use `bisect.bisect_left` / `bisect.bisect_right` if you don't need to write it yourself.
+
+### Search in a Rotated Sorted Array
+
+The array as a whole is not sorted, but **one side of every split always is**. Compare `nums[mid]`
+to `nums[left]` to learn which side that is; a plain range check then says whether the target lies
+inside the sorted side, and if it doesn't, it must be in the other. Pattern 1 with one extra
+decision.
+
+```python
+def search_rotated(nums, target):
+    left, right = 0, len(nums) - 1
+    while left <= right:
+        mid = (left + right) // 2
+        if nums[mid] == target:
+            return mid
+        if nums[left] <= nums[mid]:                  # left side is the sorted one
+            if nums[left] <= target < nums[mid]:
+                right = mid - 1
+            else:
+                left = mid + 1
+        else:                                        # right side is the sorted one
+            if nums[mid] < target <= nums[right]:
+                left = mid + 1
+            else:
+                right = mid - 1
+    return -1
+```
+
+**Find the minimum** is the same insight with no target to match, so it collapses to Pattern 2 —
+but compare against `nums[right]`, never `nums[left]`:
+
+```python
+def find_min_rotated(nums):
+    left, right = 0, len(nums) - 1
+    while left < right:
+        mid = (left + right) // 2
+        if nums[mid] > nums[right]:
+            left = mid + 1               # rotation point is strictly right of mid
+        else:
+            right = mid                  # mid may be the minimum — keep it
+    return nums[left]
+```
+
+`nums[mid] > nums[left]` is true of an array that was never rotated, so a left-hand comparison
+walks away from a minimum sitting at index 0. `nums[right]` has no such blind spot.
+
+### Binary Search on a 2D Matrix
+
+When each row is sorted **and** every value in a row is smaller than the first value of the next,
+the matrix is one sorted array that merely happens to be stored in rows. Search it as one — the
+only work is mapping a flat index back to a cell.
+
+```python
+def search_matrix(matrix, target):
+    rows, cols = len(matrix), len(matrix[0])
+    left, right = 0, rows * cols - 1
+    while left <= right:
+        mid = (left + right) // 2
+        value = matrix[mid // cols][mid % cols]      # flat index → (row, col)
+        if value == target:
+            return True
+        if value < target:
+            left = mid + 1
+        else:
+            right = mid - 1
+    return False
+```
+
+O(log(rows · cols)). If the rows are individually sorted but *not* globally ordered, the flattening
+is invalid: binary-search the rows for the candidate row and then binary-search inside it, or start
+at the top-right corner and drop a row / drop a column each step in O(rows + cols).
 
 ### Binary Search on Answer
 
@@ -605,6 +671,34 @@ def submatrix_sum(prefix, r1, c1, r2, c2):
             + prefix[r1][c1])
 ```
 
+### Prefix products — Product of Array Except Self
+
+The same two-pass idea with `*` in place of `+`. Dividing the total product by `nums[i]` is one
+line but dies on a zero in the input; instead build the product of everything to the left, then
+sweep back multiplying in everything to the right. Folding the second pass into the output array
+keeps it O(1) extra space.
+
+```python
+def product_except_self(nums):
+    n = len(nums)
+    result = [1] * n
+
+    prefix = 1
+    for i in range(n):                 # result[i] = product of everything LEFT of i
+        result[i] = prefix
+        prefix *= nums[i]
+
+    suffix = 1
+    for i in range(n - 1, -1, -1):     # then multiply in everything RIGHT of i
+        result[i] *= suffix
+        suffix *= nums[i]
+
+    return result
+```
+
+Any "combine every element except this one" question takes this shape whenever the operation is
+associative and has an identity — sum, product, min/max, gcd, xor.
+
 ---
 
 ## Hashing
@@ -626,7 +720,7 @@ def group_anagrams(strs):
     from collections import defaultdict
     groups = defaultdict(list)
     for s in strs:
-        key = tuple(sorted(s))                 # or a 26-length count tuple: O(n) per word
+        key = tuple(sorted(s))               # or a 26-length count tuple: O(n) per word
         groups[key].append(s)
     return list(groups.values())
 
@@ -685,7 +779,7 @@ def decode(s):
     i = 0
     while i < len(s):
         j = i
-        while s[j] != '#':                     # digits up to the first '#' are the length
+        while s[j] != '#':                   # digits up to the first '#' are the length
             j += 1
         length = int(s[i:j])
         out.append(s[j + 1:j + 1 + length])
@@ -700,7 +794,8 @@ def decode(s):
 A stack maintained in monotonic (increasing or decreasing) order. Perfect for "next greater / smaller element" style problems in O(n).
 
 ```python
-# Next Greater Element — for each index, next index with a larger value
+# Next Greater Element — for each index, the next larger VALUE to its right (-1 if
+# none). Store `i - j` instead, as daily_temperatures does, if you want the distance.
 def next_greater(nums):
     result = [-1] * len(nums)
     stack = []                          # stores indices, values decreasing
@@ -775,7 +870,7 @@ def eval_rpn(tokens):
         '+': lambda a, b: a + b,
         '-': lambda a, b: a - b,
         '*': lambda a, b: a * b,
-        '/': lambda a, b: int(a / b),   # truncates toward zero; a // b floors — not the same
+        '/': lambda a, b: int(a / b),   # int() truncates toward zero, a // b floors
     }
     stack = []
     for token in tokens:
@@ -862,9 +957,9 @@ The stack height is the number of distinct fleets.
 def car_fleet(target, position, speed):
     stack = []
     for p, s in sorted(zip(position, speed), reverse=True):
-        stack.append((target - p) / s)                  # time for this car to reach the target
+        stack.append((target - p) / s)          # time for this car to reach the target
         if len(stack) >= 2 and stack[-1] <= stack[-2]:
-            stack.pop()                                 # caught the fleet ahead
+            stack.pop()                         # caught the fleet ahead
     return len(stack)
 ```
 
@@ -1103,7 +1198,7 @@ Almost always: **sort by start**, then sweep.
 
 ```python
 # Merge overlapping intervals
-def merge(intervals):
+def merge_intervals(intervals):
     intervals.sort(key=lambda x: x[0])
     merged = [intervals[0]]
     for start, end in intervals[1:]:
@@ -1114,7 +1209,7 @@ def merge(intervals):
     return merged
 
 # Insert interval into sorted, non-overlapping list
-def insert(intervals, new):
+def insert_interval(intervals, new):
     result = []
     i, n = 0, len(intervals)
     while i < n and intervals[i][1] < new[0]:
@@ -1236,7 +1331,7 @@ def rectangle_area_ii(rectangles):
         covered = 0
         cur_end = float('-inf')
         for y1, y2 in spans:
-            y1 = max(y1, cur_end)                    # clip against what's already counted
+            y1 = max(y1, cur_end)                  # clip against what's already counted
             if y2 > y1:
                 covered += y2 - y1
                 cur_end = y2
@@ -1354,7 +1449,7 @@ Make the locally optimal choice at each step. Only works when the problem has th
 ```python
 # The shape almost every greedy takes
 def greedy(items):
-    items.sort(key=greedy_key)          # deadline, end time, size, value/weight ratio, ...
+    items.sort(key=greedy_key)       # deadline, end time, size, value/weight ratio, ...
     state = initial_state()
     result = 0
     for item in items:
@@ -1600,7 +1695,7 @@ def subsets_with_dup(nums):
         result.append(current[:])
         for i in range(start, len(nums)):
             if i > start and nums[i] == nums[i - 1]:
-                continue                          # same value, same level → same subtree
+                continue                         # same value, same level → same subtree
             current.append(nums[i])
             bt(i + 1, current)
             current.pop()
@@ -1650,9 +1745,9 @@ def decode_ways(digits):
     @cache
     def dfs(i):
         if i == len(digits):
-            return 1                              # consumed everything: one valid decoding
+            return 1                           # consumed everything: one valid decoding
         if digits[i] == '0':
-            return 0                              # no letter starts with 0
+            return 0                           # no letter starts with 0
         ways = dfs(i + 1)
         if 10 <= int(digits[i:i + 2]) <= 26:      # slicing past the end is safe
             ways += dfs(i + 2)
@@ -1668,9 +1763,9 @@ See [Dynamic Programming](#dynamic-programming) for the full treatment, and
 ## Dynamic Programming
 
 **Families:** [linear / stairs](#linear-dp--the-stairs-family) ·
-[grid](#grid-dp) · [dual-sequence](#longest-common-subsequence) ·
-[knapsack](#01-knapsack) · [interval](#interval-dp) · [DAG](#dp-on-a-dag) ·
-[tree](#tree-dp) · [bitmask](#bitmask-dp)
+[partition](#partition-dp--cutting-a-sequence-into-blocks) · [grid](#grid-dp) ·
+[dual-sequence](#longest-common-subsequence) · [knapsack](#01-knapsack) ·
+[interval](#interval-dp) · [DAG](#dp-on-a-dag) · [tree](#tree-dp) · [bitmask](#bitmask-dp)
 
 ### Two flavors
 
@@ -1695,7 +1790,7 @@ answer. Everything else follows from writing the recurrence honestly.
 ```python
 from functools import cache
 
-@cache                          # Python 3.9+; lru_cache(maxsize=None) is the older spelling
+@cache                      # Python 3.9+; lru_cache(maxsize=None) is the older spelling
 def fib(n):
     if n <= 1: return n
     return fib(n - 1) + fib(n - 2)
@@ -2101,7 +2196,8 @@ def knapsack(weights, values, capacity):
 def change(amount, coins):
     dp = [0] * (amount + 1)
     dp[0] = 1
-    for c in coins:                    # outer loop on coins → counts combinations, not permutations
+    # looping over coins on the OUTSIDE counts combinations, not permutations
+    for c in coins:
         for i in range(c, amount + 1):
             dp[i] += dp[i - c]
     return dp[amount]
@@ -2430,8 +2526,8 @@ def rob_tree(root):
             return (0, 0)
         left = dfs(node.left)
         right = dfs(node.right)
-        rob = node.val + left[1] + right[1]      # robbing here forces skipping both children
-        skip = max(left) + max(right)            # skipping frees each child to do its best
+        rob = node.val + left[1] + right[1]    # rob here → must skip both children
+        skip = max(left) + max(right)          # skip here → each child does its best
         return (rob, skip)
     return max(dfs(root))
 
@@ -2560,7 +2656,7 @@ def sieve(n):
     is_prime[0] = is_prime[1] = False
     for i in range(2, int(n**0.5) + 1):
         if is_prime[i]:
-            for j in range(i * i, n + 1, i):   # start at i*i — smaller multiples already marked
+            for j in range(i * i, n + 1, i):   # smaller multiples already marked
                 is_prime[j] = False
     return [i for i, p in enumerate(is_prime) if p]
 
@@ -2690,7 +2786,9 @@ def reorder_list(head):
     # 3. merge
     first, second = head, prev
     while second:
-        first.next, second.next, first, second = second, first.next, first.next, second.next
+        nxt1, nxt2 = first.next, second.next    # save both before rewiring anything
+        first.next, second.next = second, nxt1
+        first, second = nxt1, nxt2
 ```
 
 Cycle detection lives in [Fast & Slow Pointers](#fast--slow-pointers).
@@ -3078,8 +3176,8 @@ def multiply(a, b):
     for i in range(n):
         row_out = result[i]
         for k, a_ik in enumerate(a[i]):
-            if a_ik:                            # skip zeros in A: whole inner loop avoided
-                for j, b_kj in b_nz[k]:         # skip zeros in B
+            if a_ik:                      # skip zeros in A: whole inner loop avoided
+                for j, b_kj in b_nz[k]:   # skip zeros in B
                     row_out[j] += a_ik * b_kj
     return result
 ```
@@ -3093,7 +3191,8 @@ def multiply(a, b):
 graph = {
     'A': ['B', 'C'],
     'B': ['A', 'D'],
-    ...
+    'C': ['A'],
+    'D': ['B'],
 }
 
 # DFS recursive
@@ -3132,7 +3231,7 @@ def bfs(graph, start):
     return visited
 
 # Multi-source BFS — seed the queue with ALL sources before the main loop.
-# Common problems: Rotting Oranges, Walls and Gates, 01 Matrix, Shortest Path from any X.
+# Common problems: Rotting Oranges, Walls and Gates, 01 Matrix.
 def multi_source_bfs(grid, sources):
     """Returns dist[r][c] = min distance from any source, or -1 if unreachable."""
     from collections import deque
@@ -3176,7 +3275,7 @@ def topological_sort(graph):
 
 # Dijkstra's (non-negative weights)
 # Format note: this assumes graph[node] is a {neighbor: weight} dict.
-# The BFS/DFS examples above use graph[node] as a list of neighbors — adjust accordingly.
+# The BFS/DFS examples above use a list of neighbors — adjust accordingly.
 def dijkstra(graph, start):
     import heapq
     distances = {node: float('inf') for node in graph}
@@ -3506,7 +3605,7 @@ class CountingTrieNode:
         self.words_through = 0        # words passing through this node
         self.is_end = False
 
-def insert(root, word):
+def insert_counting(root, word):
     node = root
     for c in word:
         node = node.children.setdefault(c, CountingTrieNode())
@@ -3678,7 +3777,7 @@ When the elements are strings, coordinates or e-mail addresses, back the parent 
 nodes spring into existence on first touch. No `n` needed up front.
 
 ```python
-class UnionFind:
+class DictUnionFind:                   # distinct name — the one above is UnionFind(n)
     def __init__(self):
         self.id = {}
 
@@ -3704,7 +3803,7 @@ The common application: union things that share an attribute, then group by root
 from collections import defaultdict
 
 def accounts_merge(accounts):
-    uf = UnionFind()
+    uf = DictUnionFind()
     owner = {}
     for name, *emails in accounts:
         for email in emails:
@@ -3727,7 +3826,7 @@ sequence, then reverse the answers.
 ```python
 # Connected components after each edge removal
 def components_after_removals(n, breaks):
-    uf = UnionFind()
+    uf = DictUnionFind()
     out = []
     for a, b in reversed(breaks):
         out.append(n)                        # record the state BEFORE re-adding
