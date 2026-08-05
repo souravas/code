@@ -31,7 +31,7 @@ Pure syntax and idioms for fast lookup. For algorithm templates (binary search, 
 - [Comprehensions](#comprehensions)
 - [Generators](#generators)
 - [Lambda Functions](#lambda-functions)
-- [Scope: global & nonlocal](#scope-global--nonlocal)
+- [Scope: `global` & `nonlocal`](#scope-global--nonlocal)
 - [Classes](#classes)
 - [Common Idioms](#common-idioms)
 - [Performance Tips](#performance-tips)
@@ -1097,5 +1097,4 @@ max(nums), min(nums), sum(nums), any(conds), all(conds)
 # O(n!)      permutation generation
 ```
 
-To go the other way — from the input bound `n` to the complexity you can afford, and from there to
-the technique — see [PATTERNS.md → Choosing a Pattern](PATTERNS.md#choosing-a-pattern).
+To go the other way — from the input bound `n` to the complexity you can afford, and from there to the technique — see [PATTERNS.md → Choosing a Pattern](PATTERNS.md#choosing-a-pattern).
