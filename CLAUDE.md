@@ -119,6 +119,34 @@ Both files are read on a phone and skimmed under time pressure — keep code blo
 keep the prose between them short, and put the reason a step is non-obvious in a comment on that
 step rather than in a paragraph above it.
 
+### They are mirrored into an Obsidian vault
+
+`python .claude/scripts/to_vault.py` writes both files into `70 - Learn/Code/` of the Obsidian vault
+at `~/Downloads/hope`, adding the frontmatter and turning every markdown link into a wikilink. Only
+that residue is done at copy time — everything else here is already written the way the vault's
+Obsidian Linter would rewrite it on save, so lint is a no-op. That is why these two files break the
+prose conventions the rest of this repo follows, and re-imposing them silently undoes the copy:
+
+- **Prose is one paragraph per line, never hard-wrapped** — unlike this file. The vault's
+  `paragraph-blank-lines` rule reads each wrapped line as its own paragraph and puts a blank line
+  between them, shattering a sentence into fragments. Leave the long lines alone.
+- **Headings are already in the Linter's Title Case**, which is not ordinary Title Case: its
+  289-word minor-word list applies anywhere in the line, so `Two Pointers across Two Arrays` and
+  `Linear DP — the Stairs Family` are correct and will be reverted if "fixed". A capital you type is
+  frozen, so an acronym or a product name is safe as written.
+- **No `(`, `)` or `"` in a heading** — the rule miscounts word boundaries after them and
+  miscapitalizes the rest of the line. Attach the gloss with an em dash or a comma instead, the way
+  `Kadane's Algorithm — Maximum Subarray` and `Unbounded Knapsack — Coin Change II, Number of Ways`
+  do. Parens in body text and in code are unaffected.
+- A blank line always separates a paragraph from a list that follows it.
+- Backticks in a heading are load-bearing where they wrap a lowercase keyword — they are the only
+  reason the scope heading in `CHEATSHEET.md` still reads `global` and `nonlocal` rather than
+  `Global` and `Nonlocal`. The cost is that a heading containing backticks is a fragile wikilink
+  target on the vault side, so prefer a heading without them when the words are not keywords.
+
+Heading text feeds three things at once — the GitHub anchor slug, the `📋 Table of Contents` entry,
+and the vault wikilink — so renaming one means fixing every `](#…)` that points at it in both files.
+
 ## Git
 
 `.gitattributes` forces LF in the repo and on checkout for `.py`/`.md`/`.json`, on Windows included —
