@@ -5,6 +5,7 @@ Pure syntax and idioms for fast lookup. For algorithm templates (binary search, 
 ## 📋 Table of Contents
 
 - [General Tips](#general-tips)
+- [Range](#range)
 - [Integers](#integers)
 - [Strings](#strings)
 - [Booleans & None](#booleans--none)
@@ -66,6 +67,39 @@ sys.setrecursionlimit(10**6)
 
 ---
 
+## Range
+
+```python
+range(stop)                 # 0 .. stop-1
+range(start, stop)          # start .. stop-1   — stop is ALWAYS excluded
+range(start, stop, step)
+
+# Counting down — the stop is still exclusive, so -1 reaches index 0
+range(n - 1, -1, -1)        # n-1, n-2, ..., 1, 0
+reversed(range(n))          # same values, clearer to read
+
+# Empty rather than an error — a silent source of skipped loops
+range(5, 5)                 # empty
+range(5, 0)                 # empty (needs a negative step to count down)
+range(0, 10, -1)            # empty
+
+# Useful properties — range is lazy and O(1) to test or index
+len(range(0, 10, 3))        # 4
+x in range(0, 100, 2)       # O(1), not a scan
+range(10)[-1]               # 9
+list(range(0, 10, 3))       # [0, 3, 6, 9]
+
+# Iterating a sequence backwards by index
+for i in range(len(arr) - 1, -1, -1):
+    ...
+
+# Sliding a fixed-size window of length k
+for i in range(len(arr) - k + 1):
+    ...
+```
+
+---
+
 ## Integers
 
 ```python
@@ -80,13 +114,18 @@ divmod(10, 3)    # (3, 1) — quotient and remainder
 5 // 2           # 2 (floor division)
 5 % 2            # 1 (modulo)
 
-# Negative numbers — Python rounds towards negative infinity
+# Negative numbers — // and % round towards NEGATIVE infinity, not towards zero
 -3 // 2          # -2 (NOT -1)
-int(-3 / 2)      # -1 (rounds towards zero)
+int(-3 / 2)      # -1 (truncates towards zero)
+-10 % 3          # 2    — Python's %: sign follows the DIVISOR
 import math
-math.fmod(-10, 3) # -1.0 (correct modulo towards zero)
+math.fmod(-10, 3) # -1.0 — C-style: sign follows the DIVIDEND
 
-# Bounds
+# Bounds — same values, three spellings; `from math import inf` reads best in a
+# recurrence (`return inf`) and is what PATTERNS.md uses throughout
+from math import inf
+inf, -inf
+math.inf, -math.inf
 float('inf'), float('-inf')
 
 # Base conversions
@@ -104,7 +143,6 @@ bin(10)[2:]             # '1010' (drop the '0b' prefix)
 
 # Sentinels
 MOD = 10**9 + 7         # standard modulus for "answer may be large, return it mod ..."
-INF = float('inf')      # or math.inf
 INF_INT = 0x3F3F3F3F    # int-only "infinity" — keeps a dp table all-int, and unlike
                         # float inf, INF_INT + w is still a comparable number
 ```
@@ -583,6 +621,10 @@ heapq.heappush(pq, (priority, item))
 # Tie-breaking when items aren't comparable
 counter = itertools.count()
 heapq.heappush(pq, (priority, next(counter), obj))
+
+# Merge already-sorted iterables into one sorted stream — lazy, O(1) memory
+list(heapq.merge([1, 4, 7], [2, 3, 9]))   # [1, 2, 3, 4, 7, 9]
+heapq.merge(*lists, key=None, reverse=False)
 ```
 
 ---
@@ -700,10 +742,15 @@ for key, group in itertools.groupby(data):
 list(itertools.accumulate([1, 2, 3, 4]))                 # [1, 3, 6, 10]
 list(itertools.accumulate([1, 2, 3, 4], max))            # [1, 2, 3, 4]
 
-# Infinite iterators (use with break or zip/islice)
+# Infinite iterators (use with break, zip, or islice)
 itertools.count(5, 2)       # 5, 7, 9, 11, ...
 itertools.cycle([1, 2, 3])  # 1, 2, 3, 1, 2, 3, ...
 itertools.repeat('A', 3)    # 'A', 'A', 'A'
+
+# islice — slice any iterable, including infinite ones (no list() first).
+# Same start/stop/step as a slice, but negative indices are NOT allowed.
+list(itertools.islice(itertools.count(5, 2), 4))    # [5, 7, 9, 11]
+list(itertools.islice(range(20), 2, 8, 2))          # [2, 4, 6]
 ```
 
 ---
@@ -1049,3 +1096,6 @@ max(nums), min(nums), sum(nums), any(conds), all(conds)
 # O(2^n)     subset generation
 # O(n!)      permutation generation
 ```
+
+To go the other way — from the input bound `n` to the complexity you can afford, and from there to
+the technique — see [PATTERNS.md → Choosing a Pattern](PATTERNS.md#choosing-a-pattern).
