@@ -2031,7 +2031,7 @@ def maximal_square(matrix):
     return best * best
 ```
 
-**Dungeon Game — when you must solve it backwards.** The question is the *minimum starting health*, and health needed at a cell depends on what lies ahead, not behind. A forward scan cannot know it, so recurse from the destination: `need(r, c) = max(1, min(need ahead) - dungeon[r][c])`. The `max(1, ...)` enforces "never drop to 0 HP".
+**Dungeon Game — when you must solve it backwards.** The question is the *minimum starting health*, and health needed at a cell depends on what lies ahead, not behind. A forward scan cannot know it, so recurse from the destination: `need(r, c) = max(1, min(need ahead) - dungeon[r][c])`. The outer `max` enforces "never drop to 0 HP".
 
 ```python
 from functools import cache
@@ -3567,7 +3567,7 @@ def unique_topological_order(graph, indegree):
     return order if len(order) == len(indegree) else None      # short = cycle
 ```
 
-**Sequence Reconstruction** — "is `original` the only sequence consistent with these subsequences?" — is this plus one equality test: build the graph from each adjacent pair of every subsequence, then check `unique_topological_order(...) == original`.
+**Sequence Reconstruction** — "is `original` the only sequence consistent with these subsequences?" — is this plus one equality test: build the graph from each adjacent pair of every subsequence, then check `unique_topological_order(graph, indegree) == original`.
 
 ### Minimum Spanning Tree
 
