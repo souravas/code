@@ -4,6 +4,7 @@ Algorithm templates and patterns. For syntax lookups, see [CHEATSHEET.md](CHEATS
 
 ## 📋 Table of Contents
 
+- [Choosing a Pattern](#choosing-a-pattern)
 - [Sorting](#sorting)
 - [Binary Search](#binary-search)
 - [Two Pointers](#two-pointers)
@@ -35,6 +36,50 @@ Algorithm templates and patterns. For syntax lookups, see [CHEATSHEET.md](CHEATS
 
 ---
 
+## Choosing a Pattern
+
+### From the constraints
+
+`n` bounds the complexity you can afford, which usually names the technique before you have finished
+reading the statement. Assume roughly 10⁸ simple operations per second.
+
+| n | Affordable | Usually means |
+| --- | --- | --- |
+| ≤ 12 | O(n!) | permutations, brute-force ordering |
+| ≤ 20 | O(2ⁿ) | subset enumeration, [bitmask DP](#bitmask-dp) |
+| ≤ 100 | O(n³) | [interval DP](#interval-dp), Floyd–Warshall |
+| ≤ 1,000 | O(n²) | [dual-sequence DP](#dual-sequence-dp), pairwise scans |
+| ≤ 10⁵ | O(n log n) | [sorting](#sorting), [heap](#heap--top-k), [binary search](#binary-search) |
+| ≤ 10⁶ | O(n) | [two pointers](#two-pointers), [sliding window](#sliding-window), [prefix sum](#prefix-sum) |
+| ≥ 10⁹ | O(log n) | [binary search on answer](#binary-search-on-answer), math |
+
+A bound that looks *too small* is the loudest hint in the problem — `n ≤ 20` is practically an
+instruction to enumerate subsets.
+
+### From the wording
+
+| The problem says | Reach for |
+| --- | --- |
+| "sorted array", "pair that sums to" | [Two Pointers](#two-pointers) |
+| "minimum/maximum X such that…" | [Binary Search on Answer](#binary-search-on-answer) |
+| "longest/shortest subarray or substring" | [Sliding Window](#sliding-window) |
+| "range sum", asked repeatedly | [Prefix Sum](#prefix-sum) — [Segment Tree](#segment-tree) if it mutates |
+| "next greater/smaller", "histogram" | [Monotonic Stack](#monotonic-stack) |
+| "top k", "k closest", "median of a stream" | [Heap / Top-K](#heap--top-k), [Quickselect](#quickselect) |
+| "overlapping", "merge", "meeting rooms" | [Intervals](#intervals), [Line Sweep](#line-sweep) |
+| "all permutations/subsets/combinations" | [Backtracking](#backtracking) |
+| "how many ways", "min cost", "can I reach" | [Dynamic Programming](#dynamic-programming) |
+| "shortest path" — unweighted | [BFS](#graphs) · weighted → [Dijkstra](#graphs) |
+| "prerequisites", "ordering", "cycle" | [topological sort](#graphs) |
+| "connected", "groups", "merge accounts" | [Union-Find](#union-find) |
+| "prefix", "autocomplete", "dictionary" | [Trie](#trie) |
+| "cycle in a list", "find the duplicate" | [Fast & Slow Pointers](#fast--slow-pointers) |
+
+If two of them fit, write the [DP](#dynamic-programming): a correct recursion you can memoise beats a
+[greedy](#greedy) you cannot justify.
+
+---
+
 ## Sorting
 
 Python's built-in sort is Timsort — O(n log n), stable, and almost always the right answer. The
@@ -42,12 +87,16 @@ algorithmic decision is the **key**, not the sort. (For `sort` / `sorted` syntax
 [CHEATSHEET.md → Lists](CHEATSHEET.md#lists).)
 
 ```python
-# A tuple key is a priority order — negate a term to flip that one term's direction
-arr.sort(key=lambda x: (x[0], -x[1]))   # x[0] ascending, ties broken by x[1] descending
-
-# Top-k by frequency — Counter already does the sorting
 from collections import Counter
-top_k = [item for item, _ in Counter(arr).most_common(k)]
+
+# A tuple key is a priority order — negate a term to flip that one term's direction
+def sort_by_two_keys(pairs):
+    pairs.sort(key=lambda x: (x[0], -x[1]))   # x[0] ascending, ties by x[1] descending
+    return pairs
+
+# Top K Frequent Elements — Counter already does the sorting
+def top_k_frequent(arr, k):
+    return [item for item, _ in Counter(arr).most_common(k)]
 ```
 
 ### Custom comparator with `cmp_to_key`
@@ -258,6 +307,28 @@ def find_min_rotated(nums):
 
 `nums[mid] > nums[left]` is true of an array that was never rotated, so a left-hand comparison
 walks away from a minimum sitting at index 0. `nums[right]` has no such blind spot.
+
+### Peak of a Mountain Array
+
+There is no target here — the predicate is the **shape**. `arr[mid] > arr[mid + 1]` means the
+descent has already begun, so the peak is `mid` or lies to its left; otherwise you are still
+climbing and it is strictly right. Pattern 2, so `right = mid` never steps over the answer.
+
+```python
+def peak_index(arr):
+    left, right = 0, len(arr) - 1
+    while left < right:
+        mid = (left + right) // 2
+        if arr[mid] > arr[mid + 1]:
+            right = mid              # still on or before the peak — keep mid
+        else:
+            left = mid + 1           # still climbing
+    return left
+```
+
+`mid + 1` can never run off the end: `left < right` forces `mid < right`. The same comparison finds
+*a* local peak in a fully unsorted array (Find Peak Element) — it always points uphill, and any
+uphill walk on a bounded array must stop somewhere.
 
 ### Binary Search on a 2D Matrix
 
@@ -481,6 +552,16 @@ def find_duplicate(nums):
 
 ## Sliding Window
 
+One rule governs the whole family — **which side of the validity test you shrink on**:
+
+| Goal | Shrink while the window is | Record the answer |
+| --- | --- | --- |
+| **Longest** valid window | **invalid** | after the shrink loop, every step |
+| **Shortest** valid window | **valid** | inside the shrink loop, before each move |
+
+Everything else is bookkeeping: what "valid" means, and what state the window has to carry to decide
+it in O(1).
+
 ```python
 # Fixed-size window — max sum of k consecutive
 def max_sum_subarray(nums, k):
@@ -506,10 +587,11 @@ def longest_unique_substring(s):
 # Minimum window substring containing all chars of t
 def min_window(s, t):
     from collections import Counter
+    from math import inf
     need = Counter(t)
     missing = len(t)
     left = 0
-    best_start, best_len = 0, float('inf')
+    best_start, best_len = 0, inf
 
     for right, c in enumerate(s):
         if need[c] > 0:
@@ -526,7 +608,7 @@ def min_window(s, t):
             missing += 1
             left += 1
 
-    return "" if best_len == float('inf') else s[best_start:best_start + best_len]
+    return "" if best_len == inf else s[best_start:best_start + best_len]
 
 # Longest substring with at most k distinct characters
 def longest_k_distinct(s, k):
@@ -633,10 +715,7 @@ def build_prefix(nums):
     prefix = [0] * (len(nums) + 1)
     for i, x in enumerate(nums):
         prefix[i + 1] = prefix[i] + x
-    return prefix
-
-# Range sum [l, r] inclusive
-range_sum = prefix[r + 1] - prefix[l]
+    return prefix                 # prefix[r + 1] - prefix[l] == sum of [l, r] inclusive
 
 # Subarray sum equals K — count subarrays with sum == k
 def subarray_sum(nums, k):
@@ -816,6 +895,21 @@ def daily_temperatures(temps):
         stack.append(i)
     return result
 
+# Next Greater Element II — the array is CIRCULAR, so index 0 can be answered by
+# something that sits before it. Walk twice and wrap with i % n; pushing only on
+# the first lap keeps every index on the stack exactly once.
+def next_greater_circular(nums):
+    n = len(nums)
+    result = [-1] * n
+    stack = []
+    for i in range(2 * n):
+        j = i % n
+        while stack and nums[stack[-1]] < nums[j]:
+            result[stack.pop()] = nums[j]
+        if i < n:
+            stack.append(j)
+    return result
+
 # Largest Rectangle in Histogram
 def largest_rectangle(heights):
     stack = []                          # indices, heights increasing
@@ -990,9 +1084,8 @@ def top_k_smallest(nums, k):
             heapq.heappop(heap)
     return [-x for x in heap]
 
-# Built-ins — fine for small k, but allocate a fresh structure
-heapq.nlargest(k, nums)
-heapq.nsmallest(k, nums)
+# Built-ins — fine for small k, but allocate a fresh structure:
+#   heapq.nlargest(k, nums)  /  heapq.nsmallest(k, nums)
 
 # K Closest Points to Origin — max-heap of size K by distance
 def k_closest(points, k):
@@ -1160,8 +1253,7 @@ Find the kth order statistic in **O(n) average** without sorting. Same partition
 ```python
 import random
 
-def quickselect(arr, k):
-    """Return the kth smallest element (1-indexed). Mutates arr."""
+def quickselect(arr, k):                    # kth smallest, 1-indexed; mutates arr
     def partition(lo, hi):
         # Randomized pivot avoids O(n²) on sorted/adversarial inputs
         p = random.randint(lo, hi)
@@ -1197,6 +1289,8 @@ def find_kth_largest(nums, k):
 Almost always: **sort by start**, then sweep.
 
 ```python
+from math import inf
+
 # Merge overlapping intervals
 def merge_intervals(intervals):
     intervals.sort(key=lambda x: x[0])
@@ -1242,7 +1336,7 @@ def can_attend_meetings(intervals):
 def erase_overlap_intervals(intervals):
     intervals.sort(key=lambda x: x[1])
     count = 0
-    end = float('-inf')
+    end = -inf
     for s, e in intervals:
         if s >= end:
             end = e
@@ -1256,7 +1350,7 @@ def erase_overlap_intervals(intervals):
 def find_min_arrows(points):
     points.sort(key=lambda x: x[1])
     arrows = 0
-    limit = float('-inf')
+    limit = -inf
     for start, end in points:
         if start > limit:
             arrows += 1
@@ -1315,6 +1409,8 @@ rectangles never changes, so the strip's area is `width × (covered y-length)`, 
 y-length is a 1-D interval-merge over the y-spans of the rectangles crossing that strip.
 
 ```python
+from math import inf
+
 def rectangle_area_ii(rectangles):
     xs = sorted({x for r in rectangles for x in (r[0], r[2])})
     total = 0
@@ -1329,7 +1425,7 @@ def rectangle_area_ii(rectangles):
             if x1 <= xl and x2 >= xr and y1 < y2     # rectangle spans this strip
         )
         covered = 0
-        cur_end = float('-inf')
+        cur_end = -inf
         for y1, y2 in spans:
             y1 = max(y1, cur_end)                  # clip against what's already counted
             if y2 > y1:
@@ -1463,6 +1559,8 @@ optimal solution's choice for mine is never worse" — not on the fact that it p
 When you cannot justify one, the fallback is [DP](#dynamic-programming).
 
 ```python
+from math import inf
+
 # Coin change, greedy version — correct ONLY for canonical coin systems
 # (e.g. 1/5/10/25). For arbitrary coins it fails: coins [1, 3, 4], amount 6
 # gives 4+1+1 = 3 coins, but the optimum is 3+3 = 2. That case needs DP.
@@ -1506,7 +1604,7 @@ def can_complete_circuit(gas, cost):
 # Best Time to Buy/Sell Stock I — single transaction
 # Track the minimum price seen so far; best profit is price - min_so_far.
 def max_profit(prices):
-    min_price = float('inf')
+    min_price = inf
     best = 0
     for p in prices:
         min_price = min(min_price, p)
@@ -1949,6 +2047,7 @@ Two dimensions, and `dp[r][c]` depends on the neighbours you are allowed to arri
 
 ```python
 from functools import cache
+from math import inf
 
 # Unique Paths — count routes from top-left to bottom-right moving right/down
 def unique_paths(m, n):
@@ -1980,7 +2079,7 @@ def min_path_sum(grid):
         if r == rows - 1 and c == cols - 1:
             return grid[r][c]
         if r >= rows or c >= cols:
-            return float('inf')
+            return inf
         return grid[r][c] + min(dfs(r + 1, c), dfs(r, c + 1))
 
     return dfs(0, 0)
@@ -2017,6 +2116,7 @@ so recurse from the destination: `need(r, c) = max(1, min(need ahead) - dungeon[
 
 ```python
 from functools import cache
+from math import inf
 
 def calculate_minimum_hp(dungeon):
     last_row, last_col = len(dungeon) - 1, len(dungeon[0]) - 1
@@ -2024,7 +2124,7 @@ def calculate_minimum_hp(dungeon):
     @cache
     def dfs(r, c):
         if r > last_row or c > last_col:
-            return float('inf')
+            return inf
         if r == last_row and c == last_col:
             return max(1, 1 - dungeon[r][c])
         return max(1, min(dfs(r + 1, c), dfs(r, c + 1)) - dungeon[r][c])
@@ -2035,14 +2135,16 @@ def calculate_minimum_hp(dungeon):
 ### Coin Change (min coins to make amount)
 
 ```python
+from math import inf
+
 def coin_change(coins, amount):
-    dp = [float('inf')] * (amount + 1)
+    dp = [inf] * (amount + 1)
     dp[0] = 0
     for i in range(1, amount + 1):
         for c in coins:
             if c <= i:
                 dp[i] = min(dp[i], dp[i - c] + 1)
-    return dp[amount] if dp[amount] != float('inf') else -1
+    return dp[amount] if dp[amount] != inf else -1
 ```
 
 ### Longest Increasing Subsequence — O(n log n)
@@ -2211,15 +2313,21 @@ get this backwards and you silently solve the other problem.
 ```python
 # 0/1 — each item once. Iterate capacity DOWNWARD so dp[j - w] is still
 # the previous row (this item not yet used).
-for w, v in items:
-    for j in range(capacity, w - 1, -1):
-        dp[j] = max(dp[j], dp[j - w] + v)
+def knapsack_01(items, capacity):            # items: (weight, value)
+    dp = [0] * (capacity + 1)
+    for w, v in items:
+        for j in range(capacity, w - 1, -1):
+            dp[j] = max(dp[j], dp[j - w] + v)
+    return dp[capacity]
 
 # Unbounded — unlimited copies. Iterate capacity UPWARD so dp[j - w] may
 # already include this item.
-for w, v in items:
-    for j in range(w, capacity + 1):
-        dp[j] = max(dp[j], dp[j - w] + v)
+def knapsack_unbounded(items, capacity):
+    dp = [0] * (capacity + 1)
+    for w, v in items:
+        for j in range(w, capacity + 1):     # the ONLY difference is this range
+            dp[j] = max(dp[j], dp[j - w] + v)
+    return dp[capacity]
 ```
 
 ### Subset-sum variants
@@ -2241,6 +2349,7 @@ def can_partition(nums):
 # Target Sum — assign + or - to every number so the result is `target`.
 # State is (index, running total); the two branches are the two signs.
 from functools import cache
+from math import inf
 
 def find_target_sum_ways(nums, target):
     @cache
@@ -2269,7 +2378,7 @@ def find_target_sum_ways_knapsack(nums, target):
 
 # Perfect Squares — unbounded knapsack where the "coins" are 1, 4, 9, 16, ...
 def num_squares(n):
-    dp = [float('inf')] * (n + 1)
+    dp = [inf] * (n + 1)
     dp[0] = 0
     for i in range(1, n + 1):
         k = 1
@@ -2514,9 +2623,31 @@ has the extra `bisect` trick that drops it to O(n log n).
 
 ### Tree DP
 
-Post-order: solve the children, then combine at the parent. When the parent's choice depends on
-what the child *did*, return a **tuple of the child's cases** instead of a single number — one pass,
-no recomputation.
+Two directions, and picking the wrong one is the usual reason a tree recursion turns into a mess:
+
+- **Downward (pre-order)** — the answer at a node depends on the *path from the root*. Carry that
+  state in as an argument.
+- **Upward (post-order)** — the answer at a node depends on its *subtrees*. Solve the children,
+  return a value, combine at the parent.
+
+```python
+from math import inf
+
+# Downward — Count Visible Nodes: a node is visible when nothing on the path from
+# the root is larger. The running maximum travels down as an argument, so each
+# node is decided the moment it is reached.
+def count_visible(node, max_so_far=-inf):
+    if not node:
+        return 0
+    visible = 1 if node.val >= max_so_far else 0
+    max_so_far = max(max_so_far, node.val)
+    return (visible
+            + count_visible(node.left, max_so_far)
+            + count_visible(node.right, max_so_far))
+```
+
+Upward is the more common shape. When the parent's choice depends on what the child *did*, return a
+**tuple of the child's cases** instead of a single number — one pass, no recomputation.
 
 ```python
 # House Robber III — (best if we rob this node, best if we skip it)
@@ -2549,11 +2680,13 @@ When `n ≤ ~20`, a **subset of items** fits in one integer, which makes it usab
 `i` set means item `i` is used.
 
 ```python
-mask & (1 << i)        # is item i in the subset?
-mask | (1 << i)        # add item i
-mask & ~(1 << i)       # remove item i
-mask.bit_count()       # subset size (Python 3.10+)
-(1 << n) - 1           # the full set
+n, i, mask = 4, 2, 0b1011      # 4 items; item 2; the subset {0, 1, 3}
+
+mask & (1 << i)        # is item i in the subset?   → 0, no
+mask | (1 << i)        # add item i                 → 0b1111
+mask & ~(1 << i)       # remove item i              → 0b1011, unchanged
+mask.bit_count()       # subset size (Python 3.10+) → 3
+(1 << n) - 1           # the full set               → 0b1111
 ```
 
 ```python
@@ -2606,30 +2739,31 @@ def min_cost_to_visit_every_node(graph):
 ## Bit Manipulation
 
 ```python
+n, i = 0b1010, 3        # n = 10
+
 # Basic operations
-n & 1                    # check if odd
-n | (1 << i)            # set ith bit
-n & ~(1 << i)           # clear ith bit
-n ^ (1 << i)            # flip ith bit
-(n >> i) & 1            # get ith bit
+n & 1                   # check if odd              → 0
+n | (1 << i)            # set ith bit               → 0b1010, already set
+n & ~(1 << i)           # clear ith bit             → 0b0010
+n ^ (1 << i)            # flip ith bit              → 0b0010
+(n >> i) & 1            # get ith bit               → 1
 
 # Tricks
-n & (n - 1)             # remove rightmost set bit
-n & -n                  # isolate rightmost set bit
-n != 0 and n & (n - 1) == 0   # check if power of 2
+n & (n - 1)             # remove rightmost set bit  → 0b1000
+n & -n                  # isolate rightmost set bit → 0b0010
+n != 0 and n & (n - 1) == 0   # check if power of 2 → False
 
-# Count set bits
+# XOR properties: a ^ a == 0, a ^ 0 == a, commutative, associative
+```
+
+```python
+# Count set bits — n.bit_count() (3.10+) and bin(n).count('1') both do this for you
 def count_bits(n):
     count = 0
     while n:
         n &= n - 1      # remove rightmost set bit
         count += 1
     return count
-
-bin(n).count('1')       # built-in alternative
-
-# XOR properties
-# a ^ a == 0, a ^ 0 == a, commutative, associative
 
 # Find single number (all others appear twice)
 def single_number(nums):
@@ -2759,6 +2893,21 @@ def merge_two_lists(l1, l2):
             tail.next, l2 = l2, l2.next
         tail = tail.next
     tail.next = l1 or l2
+    return dummy.next
+
+# Add Two Numbers — digits are stored in REVERSE order, so index 0 is the ones
+# place and one left-to-right pass adds in the natural carry direction. `carry`
+# belongs in the loop condition so a final carry still gets its own node.
+def add_two_numbers(l1, l2):
+    dummy = tail = ListNode()
+    carry = 0
+    while l1 or l2 or carry:
+        total = carry + (l1.val if l1 else 0) + (l2.val if l2 else 0)
+        carry, digit = divmod(total, 10)
+        tail.next = ListNode(digit)
+        tail = tail.next
+        l1 = l1.next if l1 else None
+        l2 = l2.next if l2 else None
     return dummy.next
 
 # Remove Nth node from end (one-pass via two pointers)
@@ -2977,13 +3126,15 @@ def build_tree(preorder, inorder):
 In a BST, in-order traversal yields a sorted sequence — that's the key invariant.
 
 ```python
+from math import inf
+
 # Validate BST
 def is_valid_bst(root):
     def check(node, lo, hi):
         if not node: return True
         if not (lo < node.val < hi): return False
         return check(node.left, lo, node.val) and check(node.right, node.val, hi)
-    return check(root, float('-inf'), float('inf'))
+    return check(root, -inf, inf)
 
 # Insert
 def insert(root, val):
@@ -3102,8 +3253,8 @@ def rotate(matrix):
     for row in matrix:
         row.reverse()
 
-# One-liner (new matrix)
-rotated = [list(row) for row in zip(*matrix[::-1])]
+# One-liner (new matrix):
+#   rotated = [list(row) for row in zip(*matrix[::-1])]
 
 # Spiral traversal
 def spiral_order(matrix):
@@ -3187,6 +3338,8 @@ def multiply(a, b):
 ## Graphs
 
 ```python
+from math import inf
+
 # Adjacency list — usually a dict
 graph = {
     'A': ['B', 'C'],
@@ -3232,9 +3385,8 @@ def bfs(graph, start):
 
 # Multi-source BFS — seed the queue with ALL sources before the main loop.
 # Common problems: Rotting Oranges, Walls and Gates, 01 Matrix.
-def multi_source_bfs(grid, sources):
-    """Returns dist[r][c] = min distance from any source, or -1 if unreachable."""
-    from collections import deque
+def multi_source_bfs(grid, sources):        # dist[r][c] = steps from the nearest
+    from collections import deque           # source, or -1 if unreachable
     rows, cols = len(grid), len(grid[0])
     dist = [[-1] * cols for _ in range(rows)]
     queue = deque()
@@ -3278,7 +3430,7 @@ def topological_sort(graph):
 # The BFS/DFS examples above use a list of neighbors — adjust accordingly.
 def dijkstra(graph, start):
     import heapq
-    distances = {node: float('inf') for node in graph}
+    distances = {node: inf for node in graph}
     distances[start] = 0
     pq = [(0, start)]
     while pq:
@@ -3293,10 +3445,9 @@ def dijkstra(graph, start):
 
 # 0-1 BFS — shortest path when every edge weight is 0 or 1. O(V + E), no heap.
 # Trick: weight-0 edges go to the FRONT of the deque, weight-1 to the back.
-def zero_one_bfs(graph, start):
-    """graph[node] = list of (neighbor, weight) where weight ∈ {0, 1}."""
-    from collections import deque
-    dist = {node: float('inf') for node in graph}
+def zero_one_bfs(graph, start):             # graph[node] = [(neighbor, weight)],
+    from collections import deque           # every weight ∈ {0, 1}
+    dist = {node: inf for node in graph}
     dist[start] = 0
     dq = deque([start])
     while dq:
@@ -3328,7 +3479,7 @@ def has_cycle_directed(graph):
 
 # Bellman-Ford (handles negative weights, detects negative cycles)
 def bellman_ford(edges, n, start):
-    dist = [float('inf')] * n
+    dist = [inf] * n
     dist[start] = 0
     for _ in range(n - 1):
         for u, v, w in edges:
@@ -3509,6 +3660,34 @@ def alien_order(words):
 
     return ''.join(order) if len(order) == len(graph) else ""   # short = cycle
 ```
+
+### Is the topological order unique?
+
+Kahn's algorithm has a free choice at exactly one moment: when the queue holds more than one node.
+So the order is unique **iff the queue never holds two** — one check inside the loop you already
+have, no extra pass.
+
+```python
+from collections import deque
+
+def unique_topological_order(graph, indegree):
+    queue = deque(n for n in indegree if indegree[n] == 0)
+    order = []
+    while queue:
+        if len(queue) > 1:
+            return None                  # a choice exists → more than one valid order
+        node = queue.popleft()
+        order.append(node)
+        for nxt in graph[node]:
+            indegree[nxt] -= 1
+            if indegree[nxt] == 0:
+                queue.append(nxt)
+    return order if len(order) == len(indegree) else None      # short = cycle
+```
+
+**Sequence Reconstruction** — "is `original` the only sequence consistent with these subsequences?" —
+is this plus one equality test: build the graph from each adjacent pair of every subsequence, then
+check `unique_topological_order(...) == original`.
 
 ### Minimum Spanning Tree
 
@@ -3894,6 +4073,8 @@ must agree, or partial overlaps silently return wrong answers:
 For a range-max tree, exactly three lines of the class above change:
 
 ```python
+from math import inf
+
 def update(self, cur, cur_left, cur_right, idx, val):
     ...
     # recombine after recursing
@@ -3901,7 +4082,7 @@ def update(self, cur, cur_left, cur_right, idx, val):
 
 def query(self, cur, cur_left, cur_right, query_left, query_right):
     if cur_left > query_right or cur_right < query_left:
-        return float('-inf')                             # identity, not 0
+        return -inf                                      # identity, not 0
     ...
     # partial overlap
     return max(self.query(cur * 2, cur_left, mid, query_left, query_right),
