@@ -38,10 +38,9 @@ Algorithm templates and patterns. For syntax lookups, see [CHEATSHEET.md](CHEATS
 
 ## Choosing a Pattern
 
-### From the constraints
+### From the Constraints
 
-`n` bounds the complexity you can afford, which usually names the technique before you have finished
-reading the statement. Assume roughly 10⁸ simple operations per second.
+`n` bounds the complexity you can afford, which usually names the technique before you have finished reading the statement. Assume roughly 10⁸ simple operations per second.
 
 | n | Affordable | Usually means |
 | --- | --- | --- |
@@ -53,10 +52,9 @@ reading the statement. Assume roughly 10⁸ simple operations per second.
 | ≤ 10⁶ | O(n) | [two pointers](#two-pointers), [sliding window](#sliding-window), [prefix sum](#prefix-sum) |
 | ≥ 10⁹ | O(log n) | [binary search on answer](#binary-search-on-answer), math |
 
-A bound that looks *too small* is the loudest hint in the problem — `n ≤ 20` is practically an
-instruction to enumerate subsets.
+A bound that looks *too small* is the loudest hint in the problem — `n ≤ 20` is practically an instruction to enumerate subsets.
 
-### From the wording
+### From the Wording
 
 | The problem says | Reach for |
 | --- | --- |
@@ -75,16 +73,13 @@ instruction to enumerate subsets.
 | "prefix", "autocomplete", "dictionary" | [Trie](#trie) |
 | "cycle in a list", "find the duplicate" | [Fast & Slow Pointers](#fast--slow-pointers) |
 
-If two of them fit, write the [DP](#dynamic-programming): a correct recursion you can memoise beats a
-[greedy](#greedy) you cannot justify.
+If two of them fit, write the [DP](#dynamic-programming): a correct recursion you can memoise beats a [greedy](#greedy) you cannot justify.
 
 ---
 
 ## Sorting
 
-Python's built-in sort is Timsort — O(n log n), stable, and almost always the right answer. The
-algorithmic decision is the **key**, not the sort. (For `sort` / `sorted` syntax see
-[CHEATSHEET.md → Lists](CHEATSHEET.md#lists).)
+Python's built-in sort is Timsort — O(n log n), stable, and almost always the right answer. The algorithmic decision is the **key**, not the sort. (For `sort` / `sorted` syntax see [CHEATSHEET.md → Lists](CHEATSHEET.md#lists).)
 
 ```python
 from collections import Counter
@@ -99,7 +94,7 @@ def top_k_frequent(arr, k):
     return [item for item, _ in Counter(arr).most_common(k)]
 ```
 
-### Custom comparator with `cmp_to_key`
+### Custom Comparator with `cmp_to_key`
 
 Use when ordering depends on a relationship between two items and can't be expressed as a single key function.
 
@@ -120,10 +115,7 @@ def largest_number(nums):
 
 ### Merge Sort
 
-You will almost never hand-roll a sort in an interview — but the **merge step** is a reusable
-primitive. Counting inversions, "count of smaller numbers after self", and the skyline problem are
-all a merge sort with extra bookkeeping in `merge`. See also
-[Divide & Conquer](#divide--conquer).
+You will almost never hand-roll a sort in an interview — but the **merge step** is a reusable primitive. Counting inversions, "count of smaller numbers after self", and the skyline problem are all a merge sort with extra bookkeeping in `merge`. See also [Divide & Conquer](#divide--conquer).
 
 ```python
 def merge_sort(nums):
@@ -147,7 +139,7 @@ def merge(left, right):
 
 O(n log n) time, O(n) extra space, stable.
 
-### The O(n²) sorts
+### The Quadratic Sorts
 
 Worth being able to write, mostly as talking points about stability and best-case behaviour.
 
@@ -183,8 +175,8 @@ def insertion_sort(nums):           # stable; O(n) on nearly-sorted input
 
 ### The 2 Essential Patterns
 
-**Pattern 1: `while left <= right`** — exact target or best candidate
-**Pattern 2: `while left < right`** — boundary where condition flips
+- **Pattern 1: `while left <= right`** — exact target or best candidate
+- **Pattern 2: `while left < right`** — boundary where condition flips
 
 ### Pattern 1 — Classic Binary Search
 
@@ -203,6 +195,7 @@ def binary_search(arr, target):
 ```
 
 **Characteristics:**
+
 - Both pointers move past mid: `left = mid + 1`, `right = mid - 1`
 - Loop continues while valid range exists; ends with `left > right`
 - Track `result` separately if you want the best candidate (not exact match)
@@ -224,12 +217,13 @@ def find_boundary(nums):
 ```
 
 **Characteristics:**
+
 - `right = mid` (never `mid - 1`) and `left = mid + 1` (never `mid` — would infinite-loop)
 - Loop ends when `left == right` — no separate result tracking
 
 **Common problems:** find min in rotated sorted array, first/last occurrence, insertion position, Koko eating bananas, capacity to ship packages.
 
-### Find First / Last Occurrence (Pattern 1 with tracking)
+### Find First / Last Occurrence — Pattern 1 with Tracking
 
 ```python
 def find_first(arr, target):
@@ -265,10 +259,7 @@ Or use `bisect.bisect_left` / `bisect.bisect_right` if you don't need to write i
 
 ### Search in a Rotated Sorted Array
 
-The array as a whole is not sorted, but **one side of every split always is**. Compare `nums[mid]`
-to `nums[left]` to learn which side that is; a plain range check then says whether the target lies
-inside the sorted side, and if it doesn't, it must be in the other. Pattern 1 with one extra
-decision.
+The array as a whole is not sorted, but **one side of every split always is**. Compare `nums[mid]` to `nums[left]` to learn which side that is; a plain range check then says whether the target lies inside the sorted side, and if it doesn't, it must be in the other. Pattern 1 with one extra decision.
 
 ```python
 def search_rotated(nums, target):
@@ -290,8 +281,7 @@ def search_rotated(nums, target):
     return -1
 ```
 
-**Find the minimum** is the same insight with no target to match, so it collapses to Pattern 2 —
-but compare against `nums[right]`, never `nums[left]`:
+**Find the minimum** is the same insight with no target to match, so it collapses to Pattern 2 — but compare against `nums[right]`, never `nums[left]`:
 
 ```python
 def find_min_rotated(nums):
@@ -305,14 +295,11 @@ def find_min_rotated(nums):
     return nums[left]
 ```
 
-`nums[mid] > nums[left]` is true of an array that was never rotated, so a left-hand comparison
-walks away from a minimum sitting at index 0. `nums[right]` has no such blind spot.
+`nums[mid] > nums[left]` is true of an array that was never rotated, so a left-hand comparison walks away from a minimum sitting at index 0. `nums[right]` has no such blind spot.
 
 ### Peak of a Mountain Array
 
-There is no target here — the predicate is the **shape**. `arr[mid] > arr[mid + 1]` means the
-descent has already begun, so the peak is `mid` or lies to its left; otherwise you are still
-climbing and it is strictly right. Pattern 2, so `right = mid` never steps over the answer.
+There is no target here — the predicate is the **shape**. `arr[mid] > arr[mid + 1]` means the descent has already begun, so the peak is `mid` or lies to its left; otherwise you are still climbing and it is strictly right. Pattern 2, so `right = mid` never steps over the answer.
 
 ```python
 def peak_index(arr):
@@ -326,15 +313,11 @@ def peak_index(arr):
     return left
 ```
 
-`mid + 1` can never run off the end: `left < right` forces `mid < right`. The same comparison finds
-*a* local peak in a fully unsorted array (Find Peak Element) — it always points uphill, and any
-uphill walk on a bounded array must stop somewhere.
+`mid + 1` can never run off the end: `left < right` forces `mid < right`. The same comparison finds *a* local peak in a fully unsorted array (Find Peak Element) — it always points uphill, and any uphill walk on a bounded array must stop somewhere.
 
 ### Binary Search on a 2D Matrix
 
-When each row is sorted **and** every value in a row is smaller than the first value of the next,
-the matrix is one sorted array that merely happens to be stored in rows. Search it as one — the
-only work is mapping a flat index back to a cell.
+When each row is sorted **and** every value in a row is smaller than the first value of the next, the matrix is one sorted array that merely happens to be stored in rows. Search it as one — the only work is mapping a flat index back to a cell.
 
 ```python
 def search_matrix(matrix, target):
@@ -352,9 +335,7 @@ def search_matrix(matrix, target):
     return False
 ```
 
-O(log(rows · cols)). If the rows are individually sorted but *not* globally ordered, the flattening
-is invalid: binary-search the rows for the candidate row and then binary-search inside it, or start
-at the top-right corner and drop a row / drop a column each step in O(rows + cols).
+O(log(rows · cols)). If the rows are individually sorted but *not* globally ordered, the flattening is invalid: binary-search the rows for the candidate row and then binary-search inside it, or start at the top-right corner and drop a row / drop a column each step in O(rows + cols).
 
 ### Binary Search on Answer
 
@@ -461,12 +442,9 @@ def trap(height):
     return total
 ```
 
-### Two pointers across two arrays
+### Two Pointers across Two Arrays
 
-The other half of the family: instead of both pointers walking one array, each walks its own. Always
-advance the pointer with the smaller value — that is what keeps the two walks aligned. This is the
-merge step of [merge sort](#merge-sort), and the same skeleton solves intersection of sorted arrays,
-merging sorted lists, and "sum between shared checkpoints" problems.
+The other half of the family: instead of both pointers walking one array, each walks its own. Always advance the pointer with the smaller value — that is what keeps the two walks aligned. This is the merge step of [merge sort](#merge-sort), and the same skeleton solves intersection of sorted arrays, merging sorted lists, and "sum between shared checkpoints" problems.
 
 ```python
 # Teleporter arrays — two sorted arrays share some values. Between shared values
@@ -559,8 +537,7 @@ One rule governs the whole family — **which side of the validity test you shri
 | **Longest** valid window | **invalid** | after the shrink loop, every step |
 | **Shortest** valid window | **valid** | inside the shrink loop, before each move |
 
-Everything else is bookkeeping: what "valid" means, and what state the window has to carry to decide
-it in O(1).
+Everything else is bookkeeping: what "valid" means, and what state the window has to carry to decide it in O(1).
 
 ```python
 # Fixed-size window — max sum of k consecutive
@@ -656,12 +633,9 @@ def least_consecutive_cards_to_match(cards):
     return -1 if best > len(cards) else best
 ```
 
-### Fixed window with a match counter
+### Fixed Window with a Match Counter
 
-When the window size is fixed and you need "is this window an anagram / permutation of t?",
-maintaining `max(count.values())` or comparing whole dicts each step is O(26) per move. Track a
-single `matches` counter instead and update it only for the two characters that change: O(1) per
-step.
+When the window size is fixed and you need "is this window an anagram / permutation of t?", maintaining `max(count.values())` or comparing whole dicts each step is O(26) per move. Track a single `matches` counter instead and update it only for the two characters that change: O(1) per step.
 
 ```python
 # Permutation in String — does s2 contain a permutation of s1?
@@ -700,8 +674,7 @@ def check_inclusion(s1, s2):
     return matches == 26
 ```
 
-**Find All Anagrams in a String** is the same loop, appending `left` to a result list wherever
-`matches == 26` instead of returning early.
+**Find All Anagrams in a String** is the same loop, appending `left` to a result list wherever `matches == 26` instead of returning early.
 
 ---
 
@@ -750,12 +723,9 @@ def submatrix_sum(prefix, r1, c1, r2, c2):
             + prefix[r1][c1])
 ```
 
-### Prefix products — Product of Array Except Self
+### Prefix Products — Product of Array Except Self
 
-The same two-pass idea with `*` in place of `+`. Dividing the total product by `nums[i]` is one
-line but dies on a zero in the input; instead build the product of everything to the left, then
-sweep back multiplying in everything to the right. Folding the second pass into the output array
-keeps it O(1) extra space.
+The same two-pass idea with `*` in place of `+`. Dividing the total product by `nums[i]` is one line but dies on a zero in the input; instead build the product of everything to the left, then sweep back multiplying in everything to the right. Folding the second pass into the output array keeps it O(1) extra space.
 
 ```python
 def product_except_self(nums):
@@ -775,15 +745,13 @@ def product_except_self(nums):
     return result
 ```
 
-Any "combine every element except this one" question takes this shape whenever the operation is
-associative and has an identity — sum, product, min/max, gcd, xor.
+Any "combine every element except this one" question takes this shape whenever the operation is associative and has an identity — sum, product, min/max, gcd, xor.
 
 ---
 
 ## Hashing
 
-A set or dict turns "have I seen this?" into O(1). The pattern worth internalising is not the
-lookup itself but **choosing a key that collapses the problem**.
+A set or dict turns "have I seen this?" into O(1). The pattern worth internalising is not the lookup itself but **choosing a key that collapses the problem**.
 
 ```python
 # Two Sum — key is the complement we still need
@@ -827,8 +795,7 @@ def is_valid_sudoku(board):
 
 ### Longest Consecutive Sequence
 
-O(n) without sorting. Only start counting from a number that *begins* a run — `num - 1` not being
-present. Every element is then visited at most twice overall.
+O(n) without sorting. Only start counting from a number that *begins* a run — `num - 1` not being present. Every element is then visited at most twice overall.
 
 ```python
 def longest_consecutive(nums):
@@ -844,10 +811,9 @@ def longest_consecutive(nums):
     return best
 ```
 
-### Length-prefix encoding
+### Length-prefix Encoding
 
-Serialising a list of strings into one string, when the strings may contain any character. A plain
-delimiter fails because the delimiter can appear in the data; a length prefix cannot be ambiguous.
+Serialising a list of strings into one string, when the strings may contain any character. A plain delimiter fails because the delimiter can appear in the data; a length prefix cannot be ambiguous.
 
 ```python
 def encode(strs):
@@ -942,8 +908,7 @@ def max_sliding_window(nums, k):
 
 ## Stack Parsing & Design
 
-Not every stack problem is monotonic. The other two families: **matching/parsing** (the stack holds
-context you must return to) and **augmented stacks** (a parallel stack maintains an invariant).
+Not every stack problem is monotonic. The other two families: **matching/parsing** (the stack holds context you must return to) and **augmented stacks** (a parallel stack maintains an invariant).
 
 ```python
 # Valid Parentheses
@@ -977,10 +942,9 @@ def eval_rpn(tokens):
     return stack.pop()
 ```
 
-### Min Stack — O(1) `getMin`
+### Min Stack — Constant-time `getMin`
 
-Keep a parallel stack of "minimum as of this point". Push onto it only when the new value ties or
-beats the current min; `<=` rather than `<` is what makes duplicates pop correctly.
+Keep a parallel stack of "minimum as of this point". Push onto it only when the new value ties or beats the current min; `<=` rather than `<` is what makes duplicates pop correctly.
 
 ```python
 class MinStack:
@@ -1004,11 +968,9 @@ class MinStack:
         return self.mins[-1]
 ```
 
-### Basic Calculator — `+`, `-`, and nesting
+### Basic Calculator — `+`, `-`, and Nesting
 
-No recursion needed. Carry a running `result` and a running `sign`; on `(` push both and reset, on
-`)` pop them and fold the sub-expression back in. Digits are consumed greedily so multi-digit
-numbers work.
+No recursion needed. Carry a running `result` and a running `sign`; on `(` push both and reset, on `)` pop them and fold the sub-expression back in. Digits are consumed greedily so multi-digit numbers work.
 
 ```python
 def basic_calculator(s):
@@ -1043,9 +1005,7 @@ def basic_calculator(s):
 
 ### Car Fleet
 
-Process cars from the one closest to the target backwards. Each stack entry is a fleet's arrival
-time; if the car behind arrives no later than the fleet ahead, it catches up and merges — pop it.
-The stack height is the number of distinct fleets.
+Process cars from the one closest to the target backwards. Each stack entry is a fleet's arrival time; if the car behind arrives no later than the fleet ahead, it catches up and merges — pop it. The stack height is the number of distinct fleets.
 
 ```python
 def car_fleet(target, position, speed):
@@ -1151,10 +1111,9 @@ def least_interval(tasks, n):
 
 **When to reach for it:** top-K, k-closest, k-th order statistic in a stream, merging k streams, sliding-window median, scheduling.
 
-### Kth Largest in a Stream — the heap *is* the state
+### Kth Largest in a Stream — the Heap *is* the State
 
-A design-class variant: keep a min-heap trimmed to exactly `k` elements, so its root is permanently
-the kth largest.
+A design-class variant: keep a min-heap trimmed to exactly `k` elements, so its root is permanently the kth largest.
 
 ```python
 import heapq
@@ -1174,11 +1133,9 @@ class KthLargest:
         return self.heap[0]
 ```
 
-### Reorganize String — most-frequent-first placement
+### Reorganize String — Most-frequent-first Placement
 
-Place the most frequent character into every other slot (index 0, 2, 4, …), wrapping to index 1 when
-you run off the end. Impossible exactly when some character's count exceeds `(n + 1) // 2`, so check
-that first and bail.
+Place the most frequent character into every other slot (index 0, 2, 4, …), wrapping to index 1 when you run off the end. Impossible exactly when some character's count exceeds `(n + 1) // 2`, so check that first and bail.
 
 ```python
 from collections import Counter
@@ -1205,10 +1162,9 @@ def reorganize_string(s):
     return ''.join(result)
 ```
 
-### Ugly Numbers — heap as an ordered generator
+### Ugly Numbers — Heap as an Ordered Generator
 
-Pop the smallest, push its multiples, dedupe with a set. The generic shape of "generate values in
-increasing order from a rule".
+Pop the smallest, push its multiples, dedupe with a set. The generic shape of "generate values in increasing order from a rule".
 
 ```python
 import heapq
@@ -1360,9 +1316,7 @@ def find_min_arrows(points):
 
 ### Partition Labels
 
-Intervals you have to *derive* first. Each character's last occurrence defines an interval; scan
-left to right extending the current partition's end to the furthest last-occurrence seen. When the
-scan index reaches that end, nothing inside the partition appears later — cut.
+Intervals you have to *derive* first. Each character's last occurrence defines an interval; scan left to right extending the current partition's end to the furthest last-occurrence seen. When the scan index reaches that end, nothing inside the partition appears later — cut.
 
 ```python
 def partition_labels(s):
@@ -1381,9 +1335,7 @@ def partition_labels(s):
 
 ## Line Sweep
 
-Sort the *endpoints* rather than the intervals, then move a vertical line across them carrying a
-running state. Where the interval greedies above answer "how many / which ones", a sweep answers
-"what is true at each x".
+Sort the *endpoints* rather than the intervals, then move a vertical line across them carrying a running state. Where the interval greedies above answer "how many / which ones", a sweep answers "what is true at each x".
 
 ```python
 # Minimum rooms via a delta sweep — the counting version of Meeting Rooms II.
@@ -1402,11 +1354,9 @@ def min_meeting_rooms_sweep(intervals):
     return best
 ```
 
-### Union area of rectangles — sweep + coordinate compression
+### Union Area of Rectangles — Sweep + Coordinate Compression
 
-Cut the plane into vertical strips at every distinct x. Inside one strip the set of covering
-rectangles never changes, so the strip's area is `width × (covered y-length)`, and the covered
-y-length is a 1-D interval-merge over the y-spans of the rectangles crossing that strip.
+Cut the plane into vertical strips at every distinct x. Inside one strip the set of covering rectangles never changes, so the strip's area is `width × (covered y-length)`, and the covered y-length is a 1-D interval-merge over the y-spans of the rectangles crossing that strip.
 
 ```python
 from math import inf
@@ -1436,22 +1386,17 @@ def rectangle_area_ii(rectangles):
     return total
 ```
 
-O(n² log n) as written. Replacing the per-strip merge with a segment tree over compressed
-y-coordinates brings it to O(n log n).
+O(n² log n) as written. Replacing the per-strip merge with a segment tree over compressed y-coordinates brings it to O(n log n).
 
 ---
 
 ## Divide & Conquer
 
-Split, solve both halves, then do the real work in the **combine** step. If a problem asks for a
-count of cross-pairs (inversions, smaller-elements-to-the-right), the merge step is where those
-pairs become countable in O(n) instead of O(n²).
+Split, solve both halves, then do the real work in the **combine** step. If a problem asks for a count of cross-pairs (inversions, smaller-elements-to-the-right), the merge step is where those pairs become countable in O(n) instead of O(n²).
 
 ### Count of Smaller Numbers After Self
 
-Merge sort on `(original_index, value)` pairs. When a left element is emitted, exactly `r` right-half
-elements have already been emitted — and every one of them was strictly smaller. Ties go left
-(`<=`) so that equal values are not counted as smaller.
+Merge sort on `(original_index, value)` pairs. When a left element is emitted, exactly `r` right-half elements have already been emitted — and every one of them was strictly smaller. Ties go left (`<=`) so that equal values are not counted as smaller.
 
 ```python
 def count_smaller(nums):
@@ -1483,14 +1428,11 @@ def count_smaller(nums):
     return counts
 ```
 
-Counting **inversions** is the same code with a single scalar accumulator instead of the per-index
-array.
+Counting **inversions** is the same code with a single scalar accumulator instead of the per-index array.
 
 ### The Skyline Problem
 
-Each building is trivially its own skyline; merging two skylines is a two-pointer walk that tracks
-the current height contributed by *each* side and emits `max(h1, h2)` whenever either changes.
-Suppressing repeated heights on emit is what keeps the output canonical.
+Each building is trivially its own skyline; merging two skylines is a two-pointer walk that tracks the current height contributed by *each* side and emits `max(h1, h2)` whenever either changes. Suppressing repeated heights on emit is what keeps the output canonical.
 
 ```python
 def get_skyline(buildings):
@@ -1554,9 +1496,7 @@ def greedy(items):
     return result
 ```
 
-Picking the sort key *is* the problem. Correctness rests on an exchange argument — "swapping any
-optimal solution's choice for mine is never worse" — not on the fact that it passed the samples.
-When you cannot justify one, the fallback is [DP](#dynamic-programming).
+Picking the sort key *is* the problem. Correctness rests on an exchange argument — "swapping any optimal solution's choice for mine is never worse" — not on the fact that it passed the samples. When you cannot justify one, the fallback is [DP](#dynamic-programming).
 
 ```python
 from math import inf
@@ -1778,11 +1718,9 @@ def partition(s):
     return result
 ```
 
-### Deduplication — skipping equal siblings
+### Deduplication — Skipping Equal Siblings
 
-When the input has duplicates and the output must not, sort first, then **skip a candidate that
-equals its predecessor at the same recursion depth**. The first branch already explored everything
-that branch could produce.
+When the input has duplicates and the output must not, sort first, then **skip a candidate that equals its predecessor at the same recursion depth**. The first branch already explored everything that branch could produce.
 
 ```python
 # Subsets II / Combination Sum II shape
@@ -1801,8 +1739,7 @@ def subsets_with_dup(nums):
     return result
 ```
 
-The same idea in an iterative two-pointer solution — advance past the run of equal values on both
-sides after recording a hit:
+The same idea in an iterative two-pointer solution — advance past the run of equal values on both sides after recording a hit:
 
 ```python
 # Three Sum, unique triplets
@@ -1830,10 +1767,9 @@ def three_sum_unique(nums, target=0):
     return result
 ```
 
-### When backtracking becomes DP
+### When Backtracking Becomes DP
 
-If the recursion returns a **count or an optimum** rather than enumerating every solution, states
-repeat and memoising collapses exponential work to polynomial. Same recursion, one decorator.
+If the recursion returns a **count or an optimum** rather than enumerating every solution, states repeat and memoising collapses exponential work to polynomial. Same recursion, one decorator.
 
 ```python
 from functools import cache
@@ -1853,37 +1789,30 @@ def decode_ways(digits):
     return dfs(0)
 ```
 
-See [Dynamic Programming](#dynamic-programming) for the full treatment, and
-[Word Break](#word-break) for the same conversion applied to string segmentation.
+See [Dynamic Programming](#dynamic-programming) for the full treatment, and [Word Break](#word-break) for the same conversion applied to string segmentation.
 
 ---
 
 ## Dynamic Programming
 
-**Families:** [linear / stairs](#linear-dp--the-stairs-family) ·
-[partition](#partition-dp--cutting-a-sequence-into-blocks) · [grid](#grid-dp) ·
-[dual-sequence](#longest-common-subsequence) · [knapsack](#01-knapsack) ·
-[interval](#interval-dp) · [DAG](#dp-on-a-dag) · [tree](#tree-dp) · [bitmask](#bitmask-dp)
+**Families:** [linear / stairs](#linear-dp--the-stairs-family) · [partition](#partition-dp--cutting-a-sequence-into-blocks) · [grid](#grid-dp) · [dual-sequence](#longest-common-subsequence) · [knapsack](#01-knapsack) · [interval](#interval-dp) · [DAG](#dp-on-a-dag) · [tree](#tree-dp) · [bitmask](#bitmask-dp)
 
-### Two flavors
+### Two Flavors
 
 - **Top-down (memoization):** write the recurrence as a recursive function, cache results.
 - **Bottom-up (tabulation):** fill a `dp` table iteratively from base cases.
 
-Top-down is usually the faster route under interview pressure: write the brute-force recursion,
-confirm the base cases, add `@cache`. Convert to a table only if you need the space optimisation or
-the interviewer asks.
+Top-down is usually the faster route under interview pressure: write the brute-force recursion, confirm the base cases, add `@cache`. Convert to a table only if you need the space optimisation or the interviewer asks.
 
-### Recognising a DP problem
+### Recognising a DP Problem
 
 1. It asks for a **max / min / count / "is it possible"** over a set of choices, not for the choices themselves.
 2. The choice at each step **constrains** later steps (otherwise it is greedy).
 3. Subproblems **repeat** — the same arguments come back down different branches.
 
-Then the work is picking the state: the smallest tuple of values that determines the rest of the
-answer. Everything else follows from writing the recurrence honestly.
+Then the work is picking the state: the smallest tuple of values that determines the rest of the answer. Everything else follows from writing the recurrence honestly.
 
-### Memoization — cleanest with `@cache`
+### Memoization — Cleanest with `@cache`
 
 ```python
 from functools import cache
@@ -1900,8 +1829,7 @@ def fib(n):
 # For grid states use two ints; for a set of chosen items use a bitmask or frozenset.
 ```
 
-Define the cached helper **inside** the outer function so it closes over the input and the cache
-dies with the call:
+Define the cached helper **inside** the outer function so it closes over the input and the cache dies with the call:
 
 ```python
 def solve(nums):
@@ -1923,7 +1851,7 @@ def fib_tab(n):
     return dp[n]
 ```
 
-### Kadane's Algorithm (Maximum Subarray)
+### Kadane's Algorithm — Maximum Subarray
 
 ```python
 def max_subarray(nums):
@@ -1934,10 +1862,9 @@ def max_subarray(nums):
     return best
 ```
 
-### Linear DP — the stairs family
+### Linear DP — the Stairs Family
 
-One dimension, and `dp[i]` depends on a **fixed window** of earlier entries. Because the window is
-bounded, the array collapses to a couple of rolling variables — O(1) space.
+One dimension, and `dp[i]` depends on a **fixed window** of earlier entries. Because the window is bounded, the array collapses to a couple of rolling variables — O(1) space.
 
 ```python
 # Climbing Stairs — 1 or 2 steps at a time. Fibonacci in disguise.
@@ -1964,7 +1891,7 @@ def min_cost_climbing_stairs(cost):
     return prev1
 ```
 
-### House Robber (no two adjacent)
+### House Robber — No Two Adjacent
 
 ```python
 def rob(nums):
@@ -1983,8 +1910,7 @@ def rob_circular(nums):
 
 ### Minimum Cost For Tickets
 
-Non-constant transition: the window reaches back 1, 7 and 30 days rather than a fixed one or two
-slots, so index arithmetic replaces the rolling variables.
+Non-constant transition: the window reaches back 1, 7 and 30 days rather than a fixed one or two slots, so index arithmetic replaces the rolling variables.
 
 ```python
 from functools import cache
@@ -2008,11 +1934,9 @@ def mincost_tickets(days, costs):
     return dfs(days[0])
 ```
 
-### Partition DP — cutting a sequence into blocks
+### Partition DP — Cutting a Sequence into Blocks
 
-State is "the best answer for the suffix starting at `i`", and the choice is **where the current
-block ends**. The inner loop extends the block one element at a time, maintaining whatever the block
-score needs (here a running max) so each extension is O(1).
+State is "the best answer for the suffix starting at `i`", and the choice is **where the current block ends**. The inner loop extends the block one element at a time, maintaining whatever the block score needs (here a running max) so each extension is O(1).
 
 ```python
 from functools import cache
@@ -2037,13 +1961,11 @@ def partition_array_for_maximum_sum(arr, k):
     return dfs(0)
 ```
 
-O(n·k). [Word Break](#word-break) and [Palindrome Partitioning — Min Cuts](#palindrome-partitioning--min-cuts)
-are the same shape with a different validity test and objective.
+O(n·k). [Word Break](#word-break) and [Palindrome Partitioning — Min Cuts](#palindrome-partitioning--min-cuts) are the same shape with a different validity test and objective.
 
 ### Grid DP
 
-Two dimensions, and `dp[r][c]` depends on the neighbours you are allowed to arrive from — usually
-`(r-1, c)` and `(r, c-1)`. Base cases live on the edges.
+Two dimensions, and `dp[r][c]` depends on the neighbours you are allowed to arrive from — usually `(r-1, c)` and `(r, c-1)`. Base cases live on the edges.
 
 ```python
 from functools import cache
@@ -2109,10 +2031,7 @@ def maximal_square(matrix):
     return best * best
 ```
 
-**Dungeon Game — when you must solve it backwards.** The question is the *minimum starting health*,
-and health needed at a cell depends on what lies ahead, not behind. A forward scan cannot know it,
-so recurse from the destination: `need(r, c) = max(1, min(need ahead) - dungeon[r][c])`. The
-`max(1, ...)` enforces "never drop to 0 HP".
+**Dungeon Game — when you must solve it backwards.** The question is the *minimum starting health*, and health needed at a cell depends on what lies ahead, not behind. A forward scan cannot know it, so recurse from the destination: `need(r, c) = max(1, min(need ahead) - dungeon[r][c])`. The `max(1, ...)` enforces "never drop to 0 HP".
 
 ```python
 from functools import cache
@@ -2132,7 +2051,7 @@ def calculate_minimum_hp(dungeon):
     return dfs(0, 0)
 ```
 
-### Coin Change (min coins to make amount)
+### Coin Change — Minimum Coins to Make the Amount
 
 ```python
 from math import inf
@@ -2147,7 +2066,7 @@ def coin_change(coins, amount):
     return dp[amount] if dp[amount] != inf else -1
 ```
 
-### Longest Increasing Subsequence — O(n log n)
+### Longest Increasing Subsequence — the Tails Array
 
 ```python
 def length_of_LIS(nums):
@@ -2164,9 +2083,7 @@ def length_of_LIS(nums):
 
 ### Dual-sequence DP
 
-Two strings, state `(i, j)` = one index into each. Characters match → consume both and move
-diagonally; otherwise branch on which side to advance. Every problem below is that skeleton with a
-different objective.
+Two strings, state `(i, j)` = one index into each. Characters match → consume both and move diagonally; otherwise branch on which side to advance. Every problem below is that skeleton with a different objective.
 
 | Problem | On match | On mismatch |
 | --- | --- | --- |
@@ -2191,7 +2108,7 @@ def lcs(text1, text2):
     return dp[m][n]
 ```
 
-### Edit Distance (Levenshtein)
+### Edit Distance — Levenshtein
 
 ```python
 def min_distance(word1, word2):
@@ -2212,8 +2129,7 @@ def min_distance(word1, word2):
 
 ### Distinct Subsequences
 
-Count how many times `t` appears as a subsequence of `s`. On a match you may *use* the character or
-*skip* it — both branches count, so they add rather than max.
+Count how many times `t` appears as a subsequence of `s`. On a match you may *use* the character or *skip* it — both branches count, so they add rather than max.
 
 ```python
 from functools import cache
@@ -2234,8 +2150,7 @@ def num_distinct(s, t):
 
 ### Minimum Delete Sum
 
-Delete characters from both strings until they match, minimising the summed ASCII cost. Same
-skeleton, but the base case charges for the whole remaining tail instead of returning 0.
+Delete characters from both strings until they match, minimising the summed ASCII cost. Same skeleton, but the base case charges for the whole remaining tail instead of returning 0.
 
 ```python
 from functools import cache
@@ -2253,11 +2168,9 @@ def minimum_delete_sum(s1, s2):
     return dfs(0, 0)
 ```
 
-### Shortest Common Supersequence — returning the string, not its length
+### Shortest Common Supersequence — Returning the String, Not Its Length
 
-When the answer is a reconstructed sequence, the recursion can return strings directly. It is
-clear but allocates heavily; the interview-grade version computes LCS lengths and walks the table
-backwards.
+When the answer is a reconstructed sequence, the recursion can return strings directly. It is clear but allocates heavily; the interview-grade version computes LCS lengths and walks the table backwards.
 
 ```python
 from functools import cache
@@ -2292,7 +2205,7 @@ def knapsack(weights, values, capacity):
     return dp[n][capacity]
 ```
 
-### Unbounded Knapsack (Coin Change II — number of ways)
+### Unbounded Knapsack — Coin Change II, Number of Ways
 
 ```python
 def change(amount, coins):
@@ -2305,10 +2218,9 @@ def change(amount, coins):
     return dp[amount]
 ```
 
-### The knapsack loop-direction rule
+### The Knapsack Loop-direction Rule
 
-Collapsed to one dimension, the *direction* of the capacity loop is what distinguishes the variants —
-get this backwards and you silently solve the other problem.
+Collapsed to one dimension, the *direction* of the capacity loop is what distinguishes the variants — get this backwards and you silently solve the other problem.
 
 ```python
 # 0/1 — each item once. Iterate capacity DOWNWARD so dp[j - w] is still
@@ -2330,7 +2242,7 @@ def knapsack_unbounded(items, capacity):
     return dp[capacity]
 ```
 
-### Subset-sum variants
+### Subset-sum Variants
 
 Every one of these is 0/1 knapsack with a different accumulator.
 
@@ -2390,8 +2302,7 @@ def num_squares(n):
 
 ### Bounded Knapsack
 
-Each item has a quantity limit. The direct version adds a third loop over how many copies to take —
-O(n · capacity · quantity):
+Each item has a quantity limit. The direct version adds a third loop over how many copies to take — O(n · capacity · quantity):
 
 ```python
 def bounded_knapsack(items, capacity):      # items: (weight, value, quantity)
@@ -2410,9 +2321,7 @@ def bounded_knapsack(items, capacity):      # items: (weight, value, quantity)
     return dp[n][capacity]
 ```
 
-**Binary decomposition** removes that third loop. Split a quantity of `q` into chunks of size
-1, 2, 4, 8, … plus a remainder; any count from 0 to `q` is a subset of those chunks, so the problem
-becomes plain 0/1 knapsack over O(log q) synthetic items.
+**Binary decomposition** removes that third loop. Split a quantity of `q` into chunks of size 1, 2, 4, 8, … plus a remainder; any count from 0 to `q` is a subset of those chunks, so the problem becomes plain 0/1 knapsack over O(log q) synthetic items.
 
 ```python
 def bounded_knapsack_binary(items, capacity):
@@ -2469,8 +2378,7 @@ def longest_palindrome_subseq(s):
 
 ### Longest Palindromic Substring — Expand Around Center
 
-O(n²) time, O(1) space — usually preferred over the DP version. Each position is a
-potential center; check both odd-length (single char) and even-length (between chars) centers.
+O(n²) time, O(1) space — usually preferred over the DP version. Each position is a potential center; check both odd-length (single char) and even-length (between chars) centers.
 
 ```python
 def longest_palindrome(s):
@@ -2511,8 +2419,7 @@ def min_cut(s):
 
 ### Interval DP
 
-State is a **range** `(i, j)` rather than a prefix, and the recurrence either shrinks the range from
-both ends or splits it at some `k`. Iterate by increasing length so shorter ranges are solved first.
+State is a **range** `(i, j)` rather than a prefix, and the recurrence either shrinks the range from both ends or splits it at some `k`. Iterate by increasing length so shorter ranges are solved first.
 
 ```python
 from functools import cache
@@ -2539,8 +2446,7 @@ def split_form(nums):
 
 ### Game Theory DP
 
-Two players alternate, both optimal. Model it from the current player's view and assume the opponent
-then leaves you the **worst** of your options — hence `min` nested inside `max`.
+Two players alternate, both optimal. Model it from the current player's view and assume the opponent then leaves you the **worst** of your options — hence `min` nested inside `max`.
 
 ```python
 from functools import cache
@@ -2569,9 +2475,7 @@ def divisor_game(n):
 
 ### DP on a DAG
 
-Whenever the transitions are acyclic, memoised DFS *is* the DP — no explicit topological order
-needed, since recursion supplies one. Look for an ordering that guarantees acyclicity: strictly
-increasing values, strictly shorter strings, divisibility after sorting.
+Whenever the transitions are acyclic, memoised DFS *is* the DP — no explicit topological order needed, since recursion supplies one. Look for an ordering that guarantees acyclicity: strictly increasing values, strictly shorter strings, divisibility after sorting.
 
 ```python
 from functools import cache
@@ -2618,17 +2522,14 @@ def largest_divisible_subset_len(nums):
     return max(dfs(i) for i in range(len(nums)))
 ```
 
-The O(n²) [LIS](#longest-increasing-subsequence--on-log-n) recurrence is the same pattern; only LIS
-has the extra `bisect` trick that drops it to O(n log n).
+The O(n²) [LIS](#longest-increasing-subsequence--the-tails-array) recurrence is the same pattern; only LIS has the extra `bisect` trick that drops it to O(n log n).
 
 ### Tree DP
 
 Two directions, and picking the wrong one is the usual reason a tree recursion turns into a mess:
 
-- **Downward (pre-order)** — the answer at a node depends on the *path from the root*. Carry that
-  state in as an argument.
-- **Upward (post-order)** — the answer at a node depends on its *subtrees*. Solve the children,
-  return a value, combine at the parent.
+- **Downward (pre-order)** — the answer at a node depends on the *path from the root*. Carry that state in as an argument.
+- **Upward (post-order)** — the answer at a node depends on its *subtrees*. Solve the children, return a value, combine at the parent.
 
 ```python
 from math import inf
@@ -2646,8 +2547,7 @@ def count_visible(node, max_so_far=-inf):
             + count_visible(node.right, max_so_far))
 ```
 
-Upward is the more common shape. When the parent's choice depends on what the child *did*, return a
-**tuple of the child's cases** instead of a single number — one pass, no recomputation.
+Upward is the more common shape. When the parent's choice depends on what the child *did*, return a **tuple of the child's cases** instead of a single number — one pass, no recomputation.
 
 ```python
 # House Robber III — (best if we rob this node, best if we skip it)
@@ -2671,13 +2571,11 @@ def longest_path(graph, node, parent):
     return best
 ```
 
-[Diameter of a Binary Tree](#trees) is the same trick: return the height, accumulate the best
-through-path in a `nonlocal`.
+[Diameter of a Binary Tree](#trees) is the same trick: return the height, accumulate the best through-path in a `nonlocal`.
 
 ### Bitmask DP
 
-When `n ≤ ~20`, a **subset of items** fits in one integer, which makes it usable as a DP state. Bit
-`i` set means item `i` is used.
+When `n ≤ ~20`, a **subset of items** fits in one integer, which makes it usable as a DP state. Bit `i` set means item `i` is used.
 
 ```python
 n, i, mask = 4, 2, 0b1011      # 4 items; item 2; the subset {0, 1, 3}
@@ -2708,9 +2606,7 @@ def min_cost_assignment(cost):
     return dp(0)
 ```
 
-**Minimum cost to visit every node (TSP shape).** Here the state needs both the visited set *and*
-where you currently stand, because the next edge's cost depends on the current node: `dp[mask][cur]`,
-O(2ⁿ · n) states.
+**Minimum cost to visit every node (TSP shape).** Here the state needs both the visited set *and* where you currently stand, because the next edge's cost depends on the current node: `dp[mask][cur]`, O(2ⁿ · n) states.
 
 ```python
 from functools import cache
@@ -2832,10 +2728,9 @@ def mod_inverse(a, m):
 MOD = 10**9 + 7
 ```
 
-### Nth prime — sieve without knowing the bound
+### Nth Prime — Sieve without Knowing the Bound
 
-The sieve needs an upper limit, but "give me the nth prime" does not supply one. Either sieve a
-generous fixed bound and count as you go, or use the estimate `p_n < n(ln n + ln ln n)` for `n ≥ 6`.
+The sieve needs an upper limit, but "give me the nth prime" does not supply one. Either sieve a generous fixed bound and count as you go, or use the estimate `p_n < n(ln n + ln ln n)` for `n ≥ 6`.
 
 ```python
 def nth_prime(n, limit=100_001):
@@ -3185,12 +3080,9 @@ def lca_bst(root, p, q):
             return root
 ```
 
-### Closest BST Values II — two in-order iterators
+### Closest BST Values II — Two In-order Iterators
 
-Find the `k` values nearest to `x`. Flattening the tree is O(n); this is O(h + k). Keep two stacks
-seeded along the search path — one that walks *backwards* through the in-order sequence
-(predecessors), one *forwards* (successors) — then merge them by distance to `x`, exactly like
-merging two sorted lists from a shared midpoint.
+Find the `k` values nearest to `x`. Flattening the tree is O(n); this is O(h + k). Keep two stacks seeded along the search path — one that walks *backwards* through the in-order sequence (predecessors), one *forwards* (successors) — then merge them by distance to `x`, exactly like merging two sorted lists from a shared midpoint.
 
 ```python
 from collections import deque
@@ -3307,11 +3199,9 @@ def set_zeroes(matrix):
         for r in range(rows): matrix[r][0] = 0
 ```
 
-### Sparse matrix multiplication
+### Sparse Matrix Multiplication
 
-The textbook triple loop does `n·m·p` multiplications regardless of content. When most entries are
-zero, reorder the loops to `i → k → j` so that a zero in `A[i][k]` lets you skip an entire inner
-loop, and pre-index the non-zeros of `B` by row.
+The textbook triple loop does `n·m·p` multiplications regardless of content. When most entries are zero, reorder the loops to `i → k → j` so that a zero in `A[i][k]` lets you skip an entire inner loop, and pre-index the non-zeros of `B` by row.
 
 ```python
 def multiply(a, b):
@@ -3492,10 +3382,9 @@ def bellman_ford(edges, n, start):
     return dist
 ```
 
-### Implicit graphs — BFS over a state space
+### Implicit Graphs — BFS over a State Space
 
-The hardest part of these is *seeing* the graph. There is no adjacency list: a **node is a
-configuration**, and an **edge is a legal move**. Once you name those two things, it is ordinary BFS.
+The hardest part of these is *seeing* the graph. There is no adjacency list: a **node is a configuration**, and an **edge is a legal move**. Once you name those two things, it is ordinary BFS.
 
 | Problem | Node | Edge |
 | --- | --- | --- |
@@ -3504,8 +3393,7 @@ configuration**, and an **edge is a legal move**. Once you name those two things
 | Sliding Puzzle | the board layout | swap the blank with a neighbour |
 | Knight's shortest path | a square | one L-shaped move |
 
-Requirements: states must be **hashable** for the `visited` set (freeze grids with
-`tuple(tuple(row) for row in grid)`), and you must mark visited **on enqueue**, not on dequeue.
+Requirements: states must be **hashable** for the `visited` set (freeze grids with `tuple(tuple(row) for row in grid)`), and you must mark visited **on enqueue**, not on dequeue.
 
 ```python
 from collections import deque
@@ -3566,13 +3454,11 @@ def sliding_puzzle(board, target=((1, 2, 3), (4, 5, 0))):
     return -1
 ```
 
-**Open the Lock** is the same loop with `('0000',)` as the start, neighbours from turning each wheel
-up or down, and the deadends pre-loaded into `visited`.
+**Open the Lock** is the same loop with `('0000',)` as the start, neighbours from turning each wheel up or down, and the deadends pre-loaded into `visited`.
 
-### Reverse the search direction
+### Reverse the Search Direction
 
-"Which cells can reach the border?" is expensive from every cell but cheap from the border — flip
-the edges and run one traversal per target set, then intersect.
+"Which cells can reach the border?" is expensive from every cell but cheap from the border — flip the edges and run one traversal per target set, then intersect.
 
 ```python
 # Pacific Atlantic Water Flow — walk UPHILL inward from each ocean's edges.
@@ -3604,8 +3490,7 @@ def pacific_atlantic(heights):
 
 ### Clone Graph
 
-Traverse while building copies. The `old → new` dict does double duty: it is the memo *and* the
-visited set, which is what stops cycles from recursing forever.
+Traverse while building copies. The `old → new` dict does double duty: it is the memo *and* the visited set, which is what stops cycles from recursing forever.
 
 ```python
 def clone_graph(node):
@@ -3624,10 +3509,9 @@ def clone_graph(node):
     return dfs(node)
 ```
 
-### Topological sort with a tie-break
+### Topological Sort with a Tie-break
 
-Kahn's algorithm with a **heap** instead of a queue yields the lexicographically smallest valid
-order. Everything else is unchanged.
+Kahn's algorithm with a **heap** instead of a queue yields the lexicographically smallest valid order. Everything else is unchanged.
 
 ```python
 import heapq
@@ -3661,11 +3545,9 @@ def alien_order(words):
     return ''.join(order) if len(order) == len(graph) else ""   # short = cycle
 ```
 
-### Is the topological order unique?
+### Is the Topological Order Unique?
 
-Kahn's algorithm has a free choice at exactly one moment: when the queue holds more than one node.
-So the order is unique **iff the queue never holds two** — one check inside the loop you already
-have, no extra pass.
+Kahn's algorithm has a free choice at exactly one moment: when the queue holds more than one node. So the order is unique **iff the queue never holds two** — one check inside the loop you already have, no extra pass.
 
 ```python
 from collections import deque
@@ -3685,14 +3567,11 @@ def unique_topological_order(graph, indegree):
     return order if len(order) == len(indegree) else None      # short = cycle
 ```
 
-**Sequence Reconstruction** — "is `original` the only sequence consistent with these subsequences?" —
-is this plus one equality test: build the graph from each adjacent pair of every subsequence, then
-check `unique_topological_order(...) == original`.
+**Sequence Reconstruction** — "is `original` the only sequence consistent with these subsequences?" — is this plus one equality test: build the graph from each adjacent pair of every subsequence, then check `unique_topological_order(...) == original`.
 
 ### Minimum Spanning Tree
 
-**Kruskal** — sort every edge by weight, take it if its endpoints are not already connected. The
-"already connected" test is [Union-Find](#union-find). Stop after `n - 1` edges.
+**Kruskal** — sort every edge by weight, take it if its endpoints are not already connected. The "already connected" test is [Union-Find](#union-find). Stop after `n - 1` edges.
 
 ```python
 def minimum_spanning_tree(n, edges):        # edges: (weight, a, b)
@@ -3709,8 +3588,7 @@ def minimum_spanning_tree(n, edges):        # edges: (weight, a, b)
     return total
 ```
 
-O(E log E), dominated by the sort. If the graph is disconnected the same loop returns a **minimum
-spanning forest** — just drop the early exit and report `taken` alongside the total.
+O(E log E), dominated by the sort. If the graph is disconnected the same loop returns a **minimum spanning forest** — just drop the early exit and report `taken` alongside the total.
 
 **Prim** — grow one tree, always taking the cheapest edge leaving it. Better on dense graphs.
 
@@ -3771,11 +3649,9 @@ class Trie:
 
 Common use cases: prefix queries, autocomplete, word search in grid (combine with DFS), longest common prefix.
 
-### Autocomplete and prefix counts
+### Autocomplete and Prefix Counts
 
-Two small extensions of the same node. For autocomplete, walk to the prefix node and DFS everything
-beneath it. For "how many words start with this prefix", maintain a counter on every node you pass
-through during insert — then the query is O(len(prefix)) with no traversal at all.
+Two small extensions of the same node. For autocomplete, walk to the prefix node and DFS everything beneath it. For "how many words start with this prefix", maintain a counter on every node you pass through during insert — then the query is O(len(prefix)) with no traversal at all.
 
 ```python
 class CountingTrieNode:
@@ -3818,10 +3694,9 @@ def autocomplete(root, prefix):
     return out
 ```
 
-### Wildcard search — `.` matches any character
+### Wildcard Search — `.` Matches Any Character
 
-A concrete character is a lookup; a `.` forks into every child. The recursion is over
-`(node, index)` rather than over the string alone.
+A concrete character is a lookup; a `.` forks into every child. The recursion is over `(node, index)` rather than over the string alone.
 
 ```python
 class WordDictionary:                    # reuses TrieNode from the section above
@@ -3847,15 +3722,11 @@ class WordDictionary:                    # reuses TrieNode from the section abov
         return match(self.root, 0)
 ```
 
-### Word Search II — trie + grid DFS
+### Word Search II — Trie + Grid DFS
 
-Searching the grid once per word is O(words × cells × 4^L). Instead put *all* the words in a trie
-and walk the grid once, advancing the trie node in lockstep with the path. A path dies the moment
-it leaves the trie.
+Searching the grid once per word is O(words × cells × 4^L). Instead put *all* the words in a trie and walk the grid once, advancing the trie node in lockstep with the path. A path dies the moment it leaves the trie.
 
-Two details do the heavy lifting: storing the whole word on its terminal node (so no path string
-has to be rebuilt), and **pruning exhausted branches** out of the trie so later cells stop
-re-exploring dead subtrees.
+Two details do the heavy lifting: storing the whole word on its terminal node (so no path string has to be rebuilt), and **pruning exhausted branches** out of the trie so later cells stop re-exploring dead subtrees.
 
 ```python
 class _Node:
@@ -3950,10 +3821,9 @@ def count_components(n, edges):
     return uf.components
 ```
 
-### Dict-backed DSU — for non-integer elements
+### Dict-backed DSU — for Non-integer Elements
 
-When the elements are strings, coordinates or e-mail addresses, back the parent map with a dict so
-nodes spring into existence on first touch. No `n` needed up front.
+When the elements are strings, coordinates or e-mail addresses, back the parent map with a dict so nodes spring into existence on first touch. No `n` needed up front.
 
 ```python
 class DictUnionFind:                   # distinct name — the one above is UnionFind(n)
@@ -3970,11 +3840,9 @@ class DictUnionFind:                   # distinct name — the one above is Unio
         self.id[self.find(x)] = self.find(y)
 ```
 
-Tracking **component sizes** costs one more dict: keep `size[root]`, and on a successful union add
-the smaller root's size into the larger's. That gives "size of the component containing x" in O(α(n))
-and makes union-by-size available at the same time.
+Tracking **component sizes** costs one more dict: keep `size[root]`, and on a successful union add the smaller root's size into the larger's. That gives "size of the component containing x" in O(α(n)) and makes union-by-size available at the same time.
 
-### Accounts Merge shape
+### Accounts Merge Shape
 
 The common application: union things that share an attribute, then group by root.
 
@@ -3996,11 +3864,9 @@ def accounts_merge(accounts):
     return [[owner[root]] + sorted(emails) for root, emails in groups.items()]
 ```
 
-### Offline / reverse Union-Find
+### Offline / Reverse Union-Find
 
-DSU can merge but cannot split, so a problem that **removes** edges over time looks impossible.
-Process the queries backwards: deletions in reverse order are insertions. Answer the reversed
-sequence, then reverse the answers.
+DSU can merge but cannot split, so a problem that **removes** edges over time looks impossible. Process the queries backwards: deletions in reverse order are insertions. Answer the reversed sequence, then reverse the answers.
 
 ```python
 # Connected components after each edge removal
@@ -4022,11 +3888,9 @@ def components_after_removals(n, breaks):
 
 ## Segment Tree
 
-For **range queries with point updates** on a mutable array. A prefix-sum array answers range sums
-in O(1) but costs O(n) per update; a segment tree makes both O(log n).
+For **range queries with point updates** on a mutable array. A prefix-sum array answers range sums in O(1) but costs O(n) per update; a segment tree makes both O(log n).
 
-Stored as a flat array with `4n` slots (a safe upper bound). Node `cur` covers `[cur_left, cur_right]`;
-its children are `2*cur` and `2*cur + 1`. Indexing starts at 1 so the arithmetic works.
+Stored as a flat array with `4n` slots (a safe upper bound). Node `cur` covers `[cur_left, cur_right]`; its children are `2*cur` and `2*cur + 1`. Indexing starts at 1 so the arithmetic works.
 
 ```python
 class SegmentTree:
@@ -4060,8 +3924,7 @@ class SegmentTree:
 
 Call it with the full range: `tree.query(1, 0, n - 1, l, r)` and `tree.update(1, 0, n - 1, i, v)`.
 
-**Changing the operation.** Swap the combine step and the disjoint-case identity together — they
-must agree, or partial overlaps silently return wrong answers:
+**Changing the operation.** Swap the combine step and the disjoint-case identity together — they must agree, or partial overlaps silently return wrong answers:
 
 | Query | Combine | Identity |
 | --- | --- | --- |
@@ -4089,10 +3952,7 @@ def query(self, cur, cur_left, cur_right, query_left, query_right):
                self.query(cur * 2 + 1, mid + 1, cur_right, query_left, query_right))
 ```
 
-**When to reach for it:** repeated range aggregate queries interleaved with updates. If the array
-never changes, use [prefix sums](#prefix-sum). If you only need prefix aggregates with updates, a
-Binary Indexed (Fenwick) tree is shorter to write. Range *updates* need lazy propagation, which is
-rarely expected in an interview.
+**When to reach for it:** repeated range aggregate queries interleaved with updates. If the array never changes, use [prefix sums](#prefix-sum). If you only need prefix aggregates with updates, a Binary Indexed (Fenwick) tree is shorter to write. Range *updates* need lazy propagation, which is rarely expected in an interview.
 
 ---
 
@@ -4100,7 +3960,7 @@ rarely expected in an interview.
 
 Classic design question. Two implementations — pick based on whether you're allowed `OrderedDict`.
 
-### Easy version — OrderedDict
+### Easy Version — OrderedDict
 
 ```python
 from collections import OrderedDict
@@ -4124,7 +3984,7 @@ class LRUCache:
             self.cache.popitem(last=False)       # evict the oldest (LRU)
 ```
 
-### From scratch — hash map + doubly-linked list
+### From Scratch — Hash Map + Doubly-linked List
 
 Interviewers often disallow `OrderedDict`. Build it yourself: dict for O(1) lookup, DLL for O(1) reorder/evict.
 
