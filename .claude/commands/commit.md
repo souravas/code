@@ -27,19 +27,10 @@ turned into spaces: `09_dynamic_programming/28_target_sum.py` → `target sum`.
 | Change | Message | Example |
 | --- | --- | --- |
 | New file | `Add <name>` | `Add reconstruct binary tree` |
-| **Empty placeholder now solved** | `Add <name>` | `Add target sum` |
 | Modified file that already had code | `Update <name>` | `Update num ways to decode` |
 | Deleted file | `Remove <name>` | `Remove trie` |
 | Renumbered (same base name) | `Rename <name>` | `Rename lowest common ancestor` |
 | Renamed to a different name | `Rename <old> to <new>` | `Rename max area to container water` |
-
-**The placeholder rule matters here.** Around 50 `algomonster` files are committed as empty stubs, so
-solving one shows up in `git status` as `M`, not `??` — but it is an `Add`. Before writing `Update`
-for a modified `.py`, check what was there before:
-
-```
-git show HEAD:<path> | wc -c     # 0 → it was an empty placeholder → "Add <name>"
-```
 
 For files that aren't solutions, use the document's own name rather than the derived one:
 `Update Cheatsheet`, `Update Patterns`, `Update README`, `Update CLAUDE.md`, `Update commit command`.
@@ -54,3 +45,7 @@ For files that aren't solutions, use the document's own name rather than the der
 - Never force-add gitignored files (`__pycache__/`, `.venv/`, `desktop.ini`).
 - `.gitattributes` stores everything as LF. If git warns about line endings, fix the file — do not
   change the git config to silence it.
+
+*Dormant:* the tree once held ~50 empty `algomonster` stubs, so solving one appeared as `M` rather
+than `??` but still counted as an `Add`. None remain, so a modified `.py` is now always an `Update`.
+Should placeholders ever reappear, `git show HEAD:<path> | wc -c` returning `0` is the tell.
