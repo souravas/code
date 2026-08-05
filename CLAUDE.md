@@ -139,6 +139,10 @@ prose conventions the rest of this repo follows, and re-imposing them silently u
   `Kadane's Algorithm — Maximum Subarray` and `Unbounded Knapsack — Coin Change II, Number of Ways`
   do. Parens in body text and in code are unaffected.
 - A blank line always separates a paragraph from a list that follows it.
+- **No `...` inside an inline code span.** `proper-ellipsis` spares fenced code blocks but not backtick
+  spans, so `` `f(...)` `` arrives in the vault as `` `f(…)` `` — no longer Python. Name the real
+  arguments (`unique_topological_order(graph, indegree)`) or drop the call parens and refer to the
+  function. Elisions inside ```` ```python ```` fences are safe and stay as `...`.
 - Backticks in a heading are load-bearing where they wrap a lowercase keyword — they are the only
   reason the scope heading in `CHEATSHEET.md` still reads `global` and `nonlocal` rather than
   `Global` and `Nonlocal`. The cost is that a heading containing backticks is a fragile wikilink
