@@ -1,6 +1,6 @@
 # 🐍 Python Coding Interview Prep
 
-**245 solved problems** worked through by hand, plus two reference documents distilled from them.
+**245 solution files** worked through by hand, plus two reference documents distilled from them.
 Python 3.14, standard library only — no dependencies, no build step, no test framework.
 
 The solutions are the practice; the references are what gets read before a round.
@@ -9,8 +9,8 @@ The solutions are the practice; the references are what gets read before a round
 | --- | --- |
 | **[CHEATSHEET.md](CHEATSHEET.md)** | Pure Python syntax and idioms — *"what does `bisect_left` return again?"* |
 | **[PATTERNS.md](PATTERNS.md)** | Algorithm templates — *"how does the monotonic-stack template go?"* |
-| **`algomonster/`** | 186 solutions following the AlgoMonster syllabus, in curriculum order |
-| **`neetcode/`** | 59 solutions mirroring LeetCode submissions |
+| **`algomonster/`** | 186 files following the AlgoMonster syllabus, in curriculum order |
+| **`neetcode/`** | 59 files mirroring LeetCode submissions |
 
 ---
 
@@ -38,7 +38,8 @@ lives in a sibling `_improved` / `_optimized` function so the naive version stay
 `class Solution` with `camelCase` methods matching the exact LeetCode signature. Multiple approaches
 become numbered variants (`groupAnagrams1`, `groupAnagrams2`). Design problems are a bare class with
 the LeetCode-specified name (`KthLargest`, `MinStack`, `LRUCache`) rather than a `Solution` wrapper.
-`TreeNode` and `ListNode` are shared and imported, not redefined.
+`TreeNode` and `ListNode` live in `trees/tree_node.py` and `linked_list/list_node.py` and are
+imported, not redefined — they are two of the 59 files, so this tree holds 57 problems.
 
 ```
 arrays_hashes    9     math_geometry    2     trees          11
