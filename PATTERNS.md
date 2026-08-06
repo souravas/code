@@ -220,8 +220,10 @@ def find_boundary(nums):
 
 - `right = mid` (never `mid - 1`) and `left = mid + 1` (never `mid` — would infinite-loop)
 - Loop ends when `left == right` — no separate result tracking
+- It always returns an index, even when nothing satisfies the condition: searching `[1, 3, 5, 7]` for the first value `>= 9` returns 3, which is indistinguishable from a real hit. Either guarantee an answer exists in the range, or test `condition(nums[left])` before trusting it.
+- Seeding `right = len(nums)` instead of `len(nums) - 1` gives the `bisect_left` convention, where a failed search returns `n` and is unambiguous.
 
-**Common problems:** find min in rotated sorted array, first/last occurrence, insertion position, Koko eating bananas, capacity to ship packages.
+**Common problems:** find min in rotated sorted array, insertion position, Koko eating bananas, capacity to ship packages. For first/last occurrence, prefer the tracking version below — an absent target needs to be reportable.
 
 ### Find First / Last Occurrence — Pattern 1 with Tracking
 
@@ -2433,15 +2435,21 @@ def count_palindromic_substrings(s):
         return s[i] == s[j] and is_pal(i + 1, j - 1)
     return sum(is_pal(i, j) for i in range(len(s)) for j in range(i, len(s)))
 
-# Burst Balloons shape — split at k, where k is the LAST one handled in (i, j)
-def split_form(nums):
+# Burst Balloons — split at k, the LAST balloon burst inside the range. By then
+# its neighbours are the untouched balloons just outside, which is exactly what
+# makes the two halves independent. Pad with 1s so the edges need no special case.
+def burst_balloons(nums):
+    balloons = [1] + nums + [1]
+
     @cache
-    def dfs(i, j):
+    def dfs(i, j):                       # inclusive range of `balloons` indices
         if i > j:
             return 0
-        return max(gain(i, k, j) + dfs(i, k - 1) + dfs(k + 1, j)
+        return max(balloons[i - 1] * balloons[k] * balloons[j + 1]
+                   + dfs(i, k - 1) + dfs(k + 1, j)
                    for k in range(i, j + 1))
-    return dfs(0, len(nums) - 1)
+
+    return dfs(1, len(balloons) - 2)
 ```
 
 ### Game Theory DP
@@ -2922,6 +2930,14 @@ def right_side_view(root):
             if node.right: queue.append(node.right)
     return result
 
+# Invert / mirror a tree — swap every node's two children.
+# The tuple assignment evaluates both recursions before either is stored,
+# so neither call sees a half-swapped node.
+def invert_tree(root):
+    if not root: return None
+    root.left, root.right = invert_tree(root.right), invert_tree(root.left)
+    return root
+
 # Max depth
 def max_depth(root):
     if not root: return 0
@@ -3013,6 +3029,50 @@ def build_tree(preorder, inorder):
 
     return build(0, len(inorder) - 1)
 ```
+
+### Comparing Two Trees in Lockstep
+
+Everything above recurses over one tree. This family descends **two at once**, and the only thing that varies between its members is which child gets paired with which.
+
+The base cases are where these go wrong. Both `None` means the two structures ran out together and agree; exactly one `None` means they diverge. Collapsing them into a single `if not p or not q` check returns `True` for a mismatch and quietly accepts trees of different shapes.
+
+```python
+def is_same_tree(p, q):
+    if not p and not q:
+        return True                          # ran out together — structures agree
+    if not p or not q:
+        return False                         # only one ran out — they diverge
+    return (p.val == q.val
+            and is_same_tree(p.left, q.left)
+            and is_same_tree(p.right, q.right))
+
+# Symmetric Tree — identical walk, but each node is paired with its MIRROR
+def is_symmetric(root):
+    def mirror(a, b):
+        if not a and not b:
+            return True
+        if not a or not b:
+            return False
+        return (a.val == b.val
+                and mirror(a.left, b.right)      # outer pair
+                and mirror(a.right, b.left))     # inner pair
+    return not root or mirror(root.left, root.right)
+```
+
+**Subtree of Another Tree** reuses the test rather than rewriting it. `is_same_tree` answers "do these two match *rooted here*", so wrap it in a walk that offers every node as a candidate root.
+
+```python
+def is_subtree(root, sub):
+    if not sub:
+        return True
+    if not root:
+        return False
+    return (is_same_tree(root, sub)
+            or is_subtree(root.left, sub)
+            or is_subtree(root.right, sub))
+```
+
+O(n · m) worst case. The O(n + m) alternative serialises both trees and runs a substring search, but it is only sound with two guards. The `#` null markers from `serialize` above stop a truncated subtree from matching — without them the preorder of `[1]` sits inside the preorder of `[1, 2]`. A delimiter fused to every value stops a numeric prefix from matching: with plain space separation `2 # #` is still a substring of `12 # #`, so emit `,12` or `^12` rather than relying on the join.
 
 ---
 
@@ -3400,7 +3460,8 @@ from collections import deque
 
 # Word Ladder — generate neighbours rather than scanning the whole word list.
 # Comparing against every word is O(N·L) per step; mutating each position over
-# 26 letters is O(26·L) and independent of the dictionary size.
+# 26 letters is O(26·L) and independent of the dictionary size. This counts
+# TRANSFORMATIONS; LeetCode counts the words in the sequence, so add 1 there.
 def word_ladder(begin, end, word_list):
     words = set(word_list)
     words.discard(begin)
