@@ -199,9 +199,11 @@ sorted(s)                   # returns sorted list of chars
 # Replace one character at index i — strings are immutable, so rebuild
 s[:i] + c + s[i + 1:]       # the workhorse of word-ladder / open-lock BFS
 
-# Padding / alignment
-s.zfill(4)                  # '0012' — zero-pad on the left
-s.rjust(4, '0'), s.ljust(4), s.center(4)
+# Padding / alignment — the width is a MINIMUM; a longer string comes back unchanged
+"12".zfill(4)               # '0012' — zero-pad on the left
+"12".rjust(4, '0')          # '0012' — same result, but any fill character
+"12".ljust(4)               # '12  '
+"12".center(4)              # ' 12 '
 
 # Bulk character mapping — one pass, faster than chained replace()
 s.translate(str.maketrans('abc', 'xyz'))        # a→x, b→y, c→z
@@ -285,6 +287,9 @@ arr.sort(reverse=True)     # in-place descending
 sorted(arr)                # new sorted list
 arr.reverse()              # in-place reverse
 list(reversed(arr))        # new reversed list
+
+# Every in-place method returns None — `arr = arr.sort()` silently sets arr to
+# None. Same trap with .reverse(), .append(), .extend(), .clear(), random.shuffle().
 
 # Custom sorting
 arr.sort(key=len)          # by length
