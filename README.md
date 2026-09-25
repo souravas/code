@@ -61,9 +61,9 @@ $ python -m neetcode.trees.invert_tree     # works
 $ python neetcode/trees/invert_tree.py     # ModuleNotFoundError
 ```
 
-Only five files print anything: `arrays_hashes/{contains_duplicate,group_anagrams,two_sum,
-valid_anagrams}.py` and `backtracking/n_queens.py` each end in a `__main__` block. That is the
-repo's entire test harness.
+Only five files print anything:
+`arrays_hashes/{contains_duplicate,group_anagrams,two_sum,valid_anagrams}.py` and
+`backtracking/n_queens.py` each end in a `__main__` block. That is the repo's entire test harness.
 
 `algomonster/` files have no cross-file imports — each defines whatever `Node` / `ListNode` it needs
 inline. Most define functions only, so importing one does nothing visible; to exercise it, import it
@@ -93,7 +93,7 @@ cover every technique that appears anywhere in the two solution trees.
 - Node skeletons for linked lists and trees
 - `collections` (Counter, defaultdict, OrderedDict, deque), `heapq`, `math`, `string`, `random`,
   `itertools`, `bisect`, `functools`, `sortedcontainers`
-- Comprehensions, generators, lambdas, scope (`global` / `nonlocal`), classes
+- Comprehensions, generators, lambdas, scope (`global` / `nonlocal`), classes, type hints
 - Common idioms (`enumerate`, `zip`, unpacking, transpose, argmax, coordinate compression)
 - Performance tips and a Big-O reference
 
@@ -110,7 +110,8 @@ complexity → technique, and a table mapping problem wording to the section tha
 - **Array tricks:** Prefix Sum (1D & 2D) and prefix products, Hashing, Monotonic Stack (incl. the
   circular variant), Intervals, Line Sweep
 - **Stacks:** monotonic, parsing (RPN, calculator), design (Min Stack), Car Fleet
-- **Top-K:** Heap (top-K, k-closest, merge-K, median of stream, streaming kth-largest), Quickselect
+- **Top-K:** Heap (top-K, k-closest, merge-K, median of stream, streaming kth-largest),
+  Quickselect (three-way partition)
 - **Strategies:** Divide & Conquer (count-of-smaller, skyline), Greedy, Backtracking, Dynamic Programming
 - **DP families:** linear/stairs, partition, grid (incl. solving backwards), dual-sequence, knapsack
   (0/1, unbounded, bounded), interval, game theory, DAG, tree (both directions), bitmask
@@ -118,7 +119,7 @@ complexity → technique, and a table mapping problem wording to the section tha
 - **Data structures:** Linked Lists, Trees, BSTs, Matrix, Graphs, Trie, Union-Find, Segment Tree
 - **Graphs in depth:** DFS/BFS, multi-source and 0-1 BFS, implicit state-space BFS (word ladder,
   sliding puzzle), topological sort (incl. tie-breaking and uniqueness), Dijkstra, Bellman-Ford,
-  MST (Kruskal & Prim)
+  Floyd–Warshall, MST (Kruskal & Prim)
 - **Design:** LRU Cache (OrderedDict + from-scratch DLL versions)
 
 ---
