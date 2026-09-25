@@ -9,7 +9,9 @@ dependencies, no test framework, no linter config. Solutions are worked through 
 back later for review, so clarity of the solution itself is the product.
 
 Two top-level solution trees (245 solution files) plus three standalone documents: `CHEATSHEET.md`
-and `PATTERNS.md` (the reference pair), and `README.md`, a short index describing those two.
+and `PATTERNS.md` (the reference pair), and `README.md`, the GitHub landing page. README summarizes
+both trees and both references and repeats the file counts and exceptions listed below, so update
+the two together.
 
 ```
 algomonster/  01_sorting(4)   02_binary_search(8)   03_two_pointers(19)
@@ -87,12 +89,14 @@ alone rather than hoisted.
 - No docstrings anywhere. Comments are rare and reserved for the non-obvious insight behind a step
   (e.g. why the smaller side advances in trapping-rain-water), never for restating the code.
 - Built-in generics (`list[int]`, `dict[str, int]`) over `typing.List`; `Optional` is used where a
-  LeetCode signature calls for it.
+  LeetCode signature calls for it. Five files still import `typing.List` — `44_tree_dp.py` and
+  `23_prime_sieve.py` in `algomonster/`, and `n_queens.py`, `subsets.py`, `level_order.py` in
+  `neetcode/`.
 - Memoization defaults to `from functools import cache` (38 files). `lru_cache` is not banned, but
   `09_dynamic_programming/37_interval_dp.py` is now its only live use. Hand-rolled `memo = {}` dicts
   also appear where the point is showing the mechanism, usually as the naive half of a
   naive/`_improved` pair.
-- `from math import inf` (9 files) is preferred over `float("inf")` in newer files; both are present.
+- `from math import inf` (10 files) is preferred over `float("inf")` in newer files; both are present.
   Return types are annotated `int | float` where a function can return `inf`.
 - The whole tree is black-clean under default settings (88 cols, double quotes, trailing commas,
   4-space indent) — keep it that way. Black is neither on `PATH` nor a project dependency; the VS Code
