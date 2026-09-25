@@ -142,8 +142,10 @@ def main() -> int:
         body = convert_links(sources[name], name, anchors).strip("\n")
         out = f"{front}\n\n{body}\n"
         if args.dry_run:
-            print(f"{target}: {len(out.splitlines())} lines "
-                  f"({'existing' if existing_frontmatter(target) else 'default'} frontmatter)")
+            print(
+                f"{target}: {len(out.splitlines())} lines "
+                f"({'existing' if existing_frontmatter(target) else 'default'} frontmatter)"
+            )
             continue
         target.write_text(out, encoding="utf-8", newline="\n")
         print(f"wrote {target}")
