@@ -33,6 +33,7 @@ Pure syntax and idioms for fast lookup. For algorithm templates (binary search, 
 - [Lambda Functions](#lambda-functions)
 - [Scope: `global` & `nonlocal`](#scope-global--nonlocal)
 - [Classes](#classes)
+- [Type Hints](#type-hints)
 - [Common Idioms](#common-idioms)
 - [Performance Tips](#performance-tips)
 
@@ -59,6 +60,13 @@ len(stack) == 0  # explicit length check
 # Walrus operator (Python 3.8+) — assign within expression
 while (line := input()):
     process(line)
+
+# Loop else — runs only if the loop finished WITHOUT hitting `break`
+for x in nums:
+    if x == target:
+        break
+else:
+    print("not found")       # same for while ... else
 
 # Raise Python's recursion limit (default ~1000) — needed for deep DFS / DP
 import sys
@@ -143,8 +151,9 @@ bin(10)[2:]             # '1010' (drop the '0b' prefix)
 
 # Sentinels
 MOD = 10**9 + 7         # standard modulus for "answer may be large, return it mod ..."
-INF_INT = 0x3F3F3F3F    # int-only "infinity" — keeps a dp table all-int, and unlike
-                        # float inf, INF_INT + w is still a comparable number
+INF_INT = 0x3F3F3F3F    # int-only "infinity" — keeps a dp table all-int, and
+                        # INF_INT - INF_INT is 0 where inf - inf is nan. But unlike
+                        # inf, INF_INT + w > INF_INT: test unreachable with >= INF_INT
 ```
 
 ---
@@ -183,6 +192,7 @@ s.swapcase()                # invert case
 # Checks
 s.isalpha()                 # only letters (a-z, A-Z)
 s.isdigit()                 # only digits (0-9)
+"-5".isdigit()              # False — a sign is not a digit; parse signed tokens with int()
 s.isalnum()                 # letters and digits
 s.isspace()                 # only whitespace
 s.islower(), s.isupper()
@@ -288,8 +298,9 @@ sorted(arr)                # new sorted list
 arr.reverse()              # in-place reverse
 list(reversed(arr))        # new reversed list
 
-# Every in-place method returns None — `arr = arr.sort()` silently sets arr to
-# None. Same trap with .reverse(), .append(), .extend(), .clear(), random.shuffle().
+# In-place methods return None — `arr = arr.sort()` silently sets arr to None.
+# Same trap with .reverse(), .append(), .extend(), .clear(), random.shuffle().
+# .pop() is the exception: it mutates AND returns the removed element.
 
 # Custom sorting
 arr.sort(key=len)          # by length
@@ -376,7 +387,7 @@ d.update({'c': 3, 'd': 4})
 del d['key']               # KeyError if missing
 d.pop('key')               # KeyError if missing
 d.pop('key', default)
-d.popitem()                # remove and return arbitrary (key, value)
+d.popitem()                # remove and return the NEWEST (key, value) — LIFO since 3.7
 d.clear()
 
 # Views
@@ -616,9 +627,16 @@ heapq.nlargest(k, iterable)
 heapq.nsmallest(k, iterable)
 heapq.nlargest(k, items, key=lambda x: x[1])
 
-# Max heap — negate values
+# Max heap — negate values (portable: works on every Python version)
 heapq.heappush(max_heap, -x)
 max_val = -heapq.heappop(max_heap)
+
+# Python 3.14+ has a real max-heap API — check the judge's version before relying on it
+heapq.heapify_max(arr)
+heapq.heappush_max(max_heap, x)
+max_val = heapq.heappop_max(max_heap)
+max_heap[0]                    # peek the max
+# also heapq.heapreplace_max and heapq.heappushpop_max
 
 # Tuples — sorts by first element, then second, etc.
 heapq.heappush(pq, (priority, item))
@@ -646,6 +664,8 @@ math.pow(2, 3)          # 8.0 -> 2**3 preferred over math.pow
 math.sqrt(16)           # 4.0
 math.isqrt(16)          # 4 (integer sqrt, no float error)
 math.log(8, 2)          # 3.0
+math.log(1000, 10)      # 2.9999999999999996 — float error: never int() a log to test
+                        # "is n a power of k"; divide by k in a loop instead
 math.log2(8)            # 3.0
 math.log10(100)         # 2.0
 
@@ -692,8 +712,8 @@ for c in string.ascii_lowercase:       # iterate alphabet
 vowels = set("aeiou")
 consonants = set(string.ascii_lowercase) - vowels
 
-if c in string.digits:                 # faster than c.isdigit() in tight loops
-    ...
+if c in string.digits:                 # ASCII-only, unlike c.isdigit(), which accepts '²' —
+    ...                                # but `in` is a substring test: '' and '12' pass too
 ```
 
 ---
@@ -745,7 +765,8 @@ for key, group in itertools.groupby(data):
 
 # Accumulate (running totals/max/min)
 list(itertools.accumulate([1, 2, 3, 4]))                 # [1, 3, 6, 10]
-list(itertools.accumulate([1, 2, 3, 4], max))            # [1, 2, 3, 4]
+list(itertools.accumulate([3, 1, 4, 1, 5], max))         # [3, 3, 4, 4, 5]
+list(itertools.accumulate([1, 2, 3, 4], initial=0))      # [0, 1, 3, 6, 10] — prefix sums
 
 # Infinite iterators (use with break, zip, or islice)
 itertools.count(5, 2)       # 5, 7, 9, 11, ...
@@ -1004,6 +1025,39 @@ class Circle:
     @property
     def area(self):
         return 3.14159 * self._r ** 2
+```
+
+---
+
+## Type Hints
+
+```python
+# Hints document intent — nothing checks them at runtime
+def two_sum(nums: list[int], target: int) -> list[int]: ...
+def rotate(nums: list[int], k: int) -> None: ...          # mutates in place, returns nothing
+
+# Built-in generics (Python 3.9+) — no import needed
+groups: dict[str, list[str]] = {}
+edges: list[tuple[int, int]] = []
+seen: set[int] = set()
+
+# LeetCode's stubs use the typing aliases — List[int] means exactly list[int]
+from typing import List, Optional
+def subsets(nums: List[int]) -> List[List[int]]: ...
+def invert_tree(root: Optional[TreeNode]) -> Optional[TreeNode]: ...
+
+# Optional[X] is X | None, the modern spelling (Python 3.10+)
+def invert_tree(root: TreeNode | None) -> TreeNode | None: ...
+
+# A function that can return math.inf honestly returns int | float
+def min_cost(i: int) -> int | float: ...
+
+# A class naming itself in a hint: fine unquoted on 3.14, whose annotations are
+# lazy; earlier versions need quotes or `from __future__ import annotations`
+class ListNode:
+    def __init__(self, val: int = 0, next: "ListNode | None" = None):
+        self.val = val
+        self.next = next
 ```
 
 ---
