@@ -40,13 +40,13 @@ Algorithm templates and patterns. For syntax lookups, see [CHEATSHEET.md](CHEATS
 
 ### From the Constraints
 
-`n` bounds the complexity you can afford, which usually names the technique before you have finished reading the statement. Assume roughly 10⁸ simple operations per second.
+`n` bounds the complexity you can afford, which usually names the technique before you have finished reading the statement. Budget roughly 10⁷ simple operations per second in Python; 10⁸ is the C++ figure.
 
 | n | Affordable | Usually means |
 | --- | --- | --- |
-| ≤ 12 | O(n!) | permutations, brute-force ordering |
+| ≤ 10 | O(n!) | permutations, brute-force ordering |
 | ≤ 20 | O(2ⁿ) | subset enumeration, [bitmask DP](#bitmask-dp) |
-| ≤ 100 | O(n³) | [interval DP](#interval-dp), Floyd–Warshall |
+| ≤ 100 | O(n³) | [interval DP](#interval-dp), [Floyd–Warshall](#floydwarshall--all-pairs-shortest-paths) |
 | ≤ 1,000 | O(n²) | [dual-sequence DP](#dual-sequence-dp), pairwise scans |
 | ≤ 10⁵ | O(n log n) | [sorting](#sorting), [heap](#heap--top-k), [binary search](#binary-search) |
 | ≤ 10⁶ | O(n) | [two pointers](#two-pointers), [sliding window](#sliding-window), [prefix sum](#prefix-sum) |
@@ -65,10 +65,10 @@ A bound that looks *too small* is the loudest hint in the problem — `n ≤ 20`
 | "next greater/smaller", "histogram" | [Monotonic Stack](#monotonic-stack) |
 | "top k", "k closest", "median of a stream" | [Heap / Top-K](#heap--top-k), [Quickselect](#quickselect) |
 | "overlapping", "merge", "meeting rooms" | [Intervals](#intervals), [Line Sweep](#line-sweep) |
-| "all permutations/subsets/combinations" | [Backtracking](#backtracking) |
+| "all permutations/subsets/combinations" | [Backtracking](#permutations-subsets-and-combinations) |
 | "how many ways", "min cost", "can I reach" | [Dynamic Programming](#dynamic-programming) |
-| "shortest path" — unweighted | [BFS](#graphs) · weighted → [Dijkstra](#graphs) |
-| "prerequisites", "ordering", "cycle" | [topological sort](#graphs) |
+| "shortest path" — unweighted | [BFS](#bfs--shortest-path-in-an-unweighted-graph) · weighted → [Dijkstra](#dijkstra--non-negative-weights) |
+| "prerequisites", "ordering", "cycle" | [topological sort](#topological-sort--kahns-algorithm) |
 | "connected", "groups", "merge accounts" | [Union-Find](#union-find) |
 | "prefix", "autocomplete", "dictionary" | [Trie](#trie) |
 | "cycle in a list", "find the duplicate" | [Fast & Slow Pointers](#fast--slow-pointers) |
@@ -1046,7 +1046,8 @@ def top_k_smallest(nums, k):
             heapq.heappop(heap)
     return [-x for x in heap]
 
-# Built-ins — fine for small k, but allocate a fresh structure:
+# Built-ins — the same size-k heap internally, O(n log k), result returned sorted.
+# Fine to use unless the interviewer wants the heap written out:
 #   heapq.nlargest(k, nums)  /  heapq.nsmallest(k, nums)
 
 # K Closest Points to Origin — max-heap of size K by distance
@@ -1081,13 +1082,13 @@ class MedianFinder:
         self.lo = []      # max-heap (store negated)  — lower half
         self.hi = []      # min-heap                   — upper half
 
-    def add(self, num):
+    def addNum(self, num):
         heapq.heappush(self.lo, -num)
         heapq.heappush(self.hi, -heapq.heappop(self.lo))   # funnel through lo→hi
         if len(self.hi) > len(self.lo):
             heapq.heappush(self.lo, -heapq.heappop(self.hi))
 
-    def median(self):
+    def findMedian(self):
         if len(self.lo) > len(self.hi):
             return -self.lo[0]
         return (-self.lo[0] + self.hi[0]) / 2
@@ -1212,33 +1213,37 @@ Find the kth order statistic in **O(n) average** without sorting. Same partition
 import random
 
 def quickselect(arr, k):                    # kth smallest, 1-indexed; mutates arr
-    def partition(lo, hi):
-        # Randomized pivot avoids O(n²) on sorted/adversarial inputs
-        p = random.randint(lo, hi)
-        arr[p], arr[hi] = arr[hi], arr[p]
-        pivot = arr[hi]
-        store = lo
-        for i in range(lo, hi):
-            if arr[i] < pivot:
-                arr[i], arr[store] = arr[store], arr[i]
-                store += 1
-        arr[store], arr[hi] = arr[hi], arr[store]
-        return store
-
     target = k - 1
     lo, hi = 0, len(arr) - 1
-    while lo <= hi:
-        p = partition(lo, hi)
-        if p == target: return arr[p]
-        elif p < target: lo = p + 1
-        else: hi = p - 1
+    while True:
+        pivot = arr[random.randint(lo, hi)]  # random pivot: sorted input stays O(n)
+        # Three-way partition: [lo, lt) < pivot, [lt, gt] == pivot, (gt, hi] > pivot.
+        # The == block is what keeps duplicates linear — a two-way split leaves
+        # every equal value on one side, so all-equal input goes O(n²).
+        lt, i, gt = lo, lo, hi
+        while i <= gt:
+            if arr[i] < pivot:
+                arr[lt], arr[i] = arr[i], arr[lt]
+                lt += 1
+                i += 1
+            elif arr[i] > pivot:
+                arr[i], arr[gt] = arr[gt], arr[i]
+                gt -= 1                      # i stays: the value swapped in is unseen
+            else:
+                i += 1
+        if target < lt:
+            hi = lt - 1
+        elif target > gt:
+            lo = gt + 1
+        else:
+            return pivot                     # target lands inside the == block
 
 # Kth Largest Element — call quickselect with k = len(arr) - k + 1
 def find_kth_largest(nums, k):
     return quickselect(nums, len(nums) - k + 1)
 ```
 
-**When to reach for it:** "kth largest/smallest" when an in-place O(n) average solution beats the O(n log k) heap. Note: worst-case O(n²) — use heap if you need a guarantee.
+**When to reach for it:** "kth largest/smallest" when an in-place O(n) average solution beats the O(n log k) heap. Unlucky pivots can still cost O(n²) — vanishingly rare with a random pivot, but use the heap if you need a guarantee.
 
 ---
 
@@ -1576,7 +1581,13 @@ def backtrack(state):
             make_choice(choice, state)
             backtrack(state)
             undo_choice(choice, state)
+```
 
+### Permutations, Subsets and Combinations
+
+Permutations loop over every unused index; subsets and combinations loop from `start` onward, which is what stops the same set being built twice in a different order.
+
+```python
 # Permutations
 def permutations(nums):
     result = []
@@ -1635,7 +1646,11 @@ def combination_sum(candidates, target):
             current.pop()
     bt(0, [], target)
     return result
+```
 
+### Grid and Board Search — Word Search, N-Queens
+
+```python
 # Word Search in grid
 def exist(board, word):
     rows, cols = len(board), len(board[0])
@@ -1673,7 +1688,13 @@ def solve_n_queens(n):
 
     bt(0)
     return result
+```
 
+### Pruning the Search — Parentheses, Palindrome Partitions
+
+Refuse a partial state the moment it can no longer lead to a valid answer, instead of generating everything and filtering at the leaf.
+
+```python
 # Generate Parentheses — prune by counts instead of validating at the leaf.
 # Open a bracket while any remain; close one only while it would stay balanced.
 def generate_parentheses(n):
@@ -1741,33 +1762,7 @@ def subsets_with_dup(nums):
     return result
 ```
 
-The same idea in an iterative two-pointer solution — advance past the run of equal values on both sides after recording a hit:
-
-```python
-# Three Sum, unique triplets
-def three_sum_unique(nums, target=0):
-    nums.sort()
-    result = []
-    for i in range(len(nums) - 2):
-        if i > 0 and nums[i] == nums[i - 1]:
-            continue
-        j, k = i + 1, len(nums) - 1
-        while j < k:
-            total = nums[i] + nums[j] + nums[k]
-            if total == target:
-                result.append([nums[i], nums[j], nums[k]])
-                while j < k and nums[j] == nums[j + 1]:
-                    j += 1
-                while j < k and nums[k] == nums[k - 1]:
-                    k -= 1
-                j += 1
-                k -= 1
-            elif total < target:
-                j += 1
-            else:
-                k -= 1
-    return result
-```
+The same skip keeps [Three Sum](#two-pointers) free of duplicate triplets without any recursion: skip a pivot equal to the one before it, and after recording a hit advance both pointers past their runs of equal values.
 
 ### When Backtracking Becomes DP
 
@@ -1797,7 +1792,7 @@ See [Dynamic Programming](#dynamic-programming) for the full treatment, and [Wor
 
 ## Dynamic Programming
 
-**Families:** [linear / stairs](#linear-dp--the-stairs-family) · [partition](#partition-dp--cutting-a-sequence-into-blocks) · [grid](#grid-dp) · [dual-sequence](#longest-common-subsequence) · [knapsack](#01-knapsack) · [interval](#interval-dp) · [DAG](#dp-on-a-dag) · [tree](#tree-dp) · [bitmask](#bitmask-dp)
+**Families:** [linear / stairs](#linear-dp--the-stairs-family) · [partition](#partition-dp--cutting-a-sequence-into-blocks) · [grid](#grid-dp) · [dual-sequence](#dual-sequence-dp) · [knapsack](#01-knapsack) · [interval](#interval-dp) · [DAG](#dp-on-a-dag) · [tree](#tree-dp) · [bitmask](#bitmask-dp)
 
 ### Two Flavors
 
@@ -2579,7 +2574,7 @@ def longest_path(graph, node, parent):
     return best
 ```
 
-[Diameter of a Binary Tree](#trees) is the same trick: return the height, accumulate the best through-path in a `nonlocal`.
+[Diameter of a Binary Tree](#subtree-recursion--depth-balance-diameter) is the same trick: return the height, accumulate the best through-path in a `nonlocal`.
 
 ### Bitmask DP
 
@@ -2688,11 +2683,13 @@ def all_subsets(nums):
 ## Math / Number Theory
 
 ```python
+import math
+
 # Sieve of Eratosthenes — all primes ≤ n in O(n log log n)
 def sieve(n):
     is_prime = [True] * (n + 1)
     is_prime[0] = is_prime[1] = False
-    for i in range(2, int(n**0.5) + 1):
+    for i in range(2, math.isqrt(n) + 1):    # isqrt: exact, unlike int(n**0.5)
         if is_prime[i]:
             for j in range(i * i, n + 1, i):   # smaller multiples already marked
                 is_prime[j] = False
@@ -2703,7 +2700,7 @@ def is_prime(n):
     if n < 2: return False
     if n < 4: return True
     if n % 2 == 0: return False
-    for i in range(3, int(n**0.5) + 1, 2):
+    for i in range(3, math.isqrt(n) + 1, 2):
         if n % i == 0: return False
     return True
 
@@ -2721,14 +2718,17 @@ def prime_factors(n):
     return factors
 
 # GCD / LCM
-import math
 math.gcd(12, 18)            # 6
 math.lcm(4, 6)              # 12 (Python 3.9+)
 
 # Fast modular exponentiation — a^b mod m in O(log b)
 pow(2, 10, 1000)            # built-in 3-arg pow
 
-# Modular inverse — when m is prime, use Fermat's little theorem: a^(m-2) mod m
+# Modular inverse — exponent -1 (Python 3.8+) works for ANY m coprime to a,
+# and raises ValueError when no inverse exists
+pow(3, -1, 7)               # 5, since 3 * 5 = 15 ≡ 1 (mod 7)
+
+# Fermat's little theorem gives the same answer when m is prime: a^(m-2) mod m
 def mod_inverse(a, m):
     return pow(a, m - 2, m)
 
@@ -2855,7 +2855,11 @@ class TreeNode:
         self.val = val
         self.left = left
         self.right = right
+```
 
+### Depth-first Traversals
+
+```python
 # Recursive traversals
 def inorder(root):
     result = []
@@ -2878,7 +2882,11 @@ def inorder_iter(root):
         result.append(curr.val)
         curr = curr.right
     return result
+```
 
+### Level-order Traversal — BFS
+
+```python
 # Level order (BFS)
 def level_order(root):
     if not root: return []
@@ -2929,7 +2937,11 @@ def right_side_view(root):
             if node.left:  queue.append(node.left)
             if node.right: queue.append(node.right)
     return result
+```
 
+### Subtree Recursion — Depth, Balance, Diameter
+
+```python
 # Invert / mirror a tree — swap every node's two children.
 # The tuple assignment evaluates both recursions before either is stored,
 # so neither call sees a half-swapped node.
@@ -2981,7 +2993,11 @@ def diameter_of_binary_tree(root):
         return 1 + max(l, r)
     depth(root)
     return diameter
+```
 
+### Lowest Common Ancestor
+
+```python
 # Lowest Common Ancestor (binary tree)
 def lca(root, p, q):
     if not root or root == p or root == q: return root
@@ -2989,7 +3005,11 @@ def lca(root, p, q):
     right = lca(root.right, p, q)
     if left and right: return root
     return left or right
+```
 
+### Serialize and Rebuild a Tree
+
+```python
 # Serialize / deserialize (preorder with None markers)
 def serialize(root):
     vals = []
@@ -3216,7 +3236,9 @@ def spiral_order(matrix):
         matrix = [list(row) for row in zip(*matrix)][::-1]  # rotate ccw
     return result
 
-# Flood fill / number of islands (DFS)
+# Flood fill / number of islands (DFS). The recursion can go rows × cols deep —
+# 90,000 on a 300 × 300 grid, far past the default limit of 1000 — so raise it
+# with sys.setrecursionlimit, or use the BFS shape, when the grid is large.
 def num_islands(grid):
     if not grid: return 0
     rows, cols = len(grid), len(grid[0])
@@ -3288,8 +3310,6 @@ def multiply(a, b):
 ## Graphs
 
 ```python
-from math import inf
-
 # Adjacency list — usually a dict
 graph = {
     'A': ['B', 'C'],
@@ -3317,27 +3337,31 @@ def dfs_iter(graph, start):
         visited.add(node)
         stack.extend(n for n in graph[node] if n not in visited)
     return visited
+```
 
-# BFS — shortest path in unweighted graph
-# Critical: mark visited when you ENQUEUE, not when you dequeue.
-# Otherwise the same node gets pushed multiple times and complexity blows up.
+### BFS — Shortest Path in an Unweighted Graph
+
+```python
+from collections import deque
+
+# The first time BFS reaches a node is along a shortest path, so record the
+# distance right then. Critical: mark visited when you ENQUEUE, not when you
+# dequeue — otherwise the same node gets pushed many times and complexity blows up.
 def bfs(graph, start):
-    from collections import deque
-    visited = {start}
+    dist = {start: 0}                        # doubles as the visited set
     queue = deque([start])
     while queue:
         node = queue.popleft()
         for n in graph[node]:
-            if n not in visited:
-                visited.add(n)               # mark on enqueue
+            if n not in dist:
+                dist[n] = dist[node] + 1     # mark on enqueue
                 queue.append(n)
-    return visited
+    return dist                              # unreachable nodes are absent
 
 # Multi-source BFS — seed the queue with ALL sources before the main loop.
 # Common problems: Rotting Oranges, Walls and Gates, 01 Matrix.
 def multi_source_bfs(grid, sources):        # dist[r][c] = steps from the nearest
-    from collections import deque           # source, or -1 if unreachable
-    rows, cols = len(grid), len(grid[0])
+    rows, cols = len(grid), len(grid[0])    # source, or -1 if unreachable
     dist = [[-1] * cols for _ in range(rows)]
     queue = deque()
 
@@ -3352,93 +3376,6 @@ def multi_source_bfs(grid, sources):        # dist[r][c] = steps from the neares
             if 0 <= nr < rows and 0 <= nc < cols and dist[nr][nc] == -1:
                 dist[nr][nc] = dist[r][c] + 1
                 queue.append((nr, nc))
-    return dist
-
-# Topological Sort (Kahn's algorithm)
-def topological_sort(graph):
-    from collections import defaultdict, deque
-    # Initialize in-degree for every node — including those only seen as values
-    in_degree = {node: 0 for node in graph}
-    for node in graph:
-        for neighbor in graph[node]:
-            in_degree.setdefault(neighbor, 0)
-            in_degree[neighbor] += 1
-
-    queue = deque(n for n, d in in_degree.items() if d == 0)
-    result = []
-    while queue:
-        node = queue.popleft()
-        result.append(node)
-        for n in graph.get(node, []):
-            in_degree[n] -= 1
-            if in_degree[n] == 0:
-                queue.append(n)
-    return result if len(result) == len(in_degree) else []   # [] = cycle
-
-# Dijkstra's (non-negative weights)
-# Format note: this assumes graph[node] is a {neighbor: weight} dict.
-# The BFS/DFS examples above use a list of neighbors — adjust accordingly.
-def dijkstra(graph, start):
-    import heapq
-    distances = {node: inf for node in graph}
-    distances[start] = 0
-    pq = [(0, start)]
-    while pq:
-        d, node = heapq.heappop(pq)
-        if d > distances[node]: continue              # stale entry
-        for neighbor, weight in graph[node].items():
-            nd = d + weight
-            if nd < distances[neighbor]:
-                distances[neighbor] = nd
-                heapq.heappush(pq, (nd, neighbor))
-    return distances
-
-# 0-1 BFS — shortest path when every edge weight is 0 or 1. O(V + E), no heap.
-# Trick: weight-0 edges go to the FRONT of the deque, weight-1 to the back.
-def zero_one_bfs(graph, start):             # graph[node] = [(neighbor, weight)],
-    from collections import deque           # every weight ∈ {0, 1}
-    dist = {node: inf for node in graph}
-    dist[start] = 0
-    dq = deque([start])
-    while dq:
-        node = dq.popleft()
-        for neighbor, w in graph[node]:
-            nd = dist[node] + w
-            if nd < dist[neighbor]:
-                dist[neighbor] = nd
-                if w == 0:
-                    dq.appendleft(neighbor)           # free move — process next
-                else:
-                    dq.append(neighbor)
-    return dist
-
-# Cycle in directed graph — DFS with 3 colors
-def has_cycle_directed(graph):
-    WHITE, GRAY, BLACK = 0, 1, 2
-    color = {node: WHITE for node in graph}
-
-    def dfs(node):
-        color[node] = GRAY
-        for n in graph[node]:
-            if color.get(n, WHITE) == GRAY: return True
-            if color.get(n, WHITE) == WHITE and dfs(n): return True
-        color[node] = BLACK
-        return False
-
-    return any(color[n] == WHITE and dfs(n) for n in graph)
-
-# Bellman-Ford (handles negative weights, detects negative cycles)
-def bellman_ford(edges, n, start):
-    dist = [inf] * n
-    dist[start] = 0
-    for _ in range(n - 1):
-        for u, v, w in edges:
-            if dist[u] + w < dist[v]:
-                dist[v] = dist[u] + w
-    # One more pass — if anything still relaxes, there's a negative cycle
-    for u, v, w in edges:
-        if dist[u] + w < dist[v]:
-            return None
     return dist
 ```
 
@@ -3523,7 +3460,8 @@ def sliding_puzzle(board, target=((1, 2, 3), (4, 5, 0))):
 
 ```python
 # Pacific Atlantic Water Flow — walk UPHILL inward from each ocean's edges.
-# Cells reached from both edge sets are the answer.
+# Cells reached from both edge sets are the answer. Like num_islands, the
+# recursion can reach rows × cols deep: raise sys.setrecursionlimit on big grids.
 def pacific_atlantic(heights):
     if not heights or not heights[0]:
         return []
@@ -3568,6 +3506,49 @@ def clone_graph(node):
         return copy
 
     return dfs(node)
+```
+
+### Topological Sort — Kahn's Algorithm
+
+```python
+from collections import deque
+
+def topological_sort(graph):
+    # Initialize in-degree for every node — including those only seen as values
+    in_degree = {node: 0 for node in graph}
+    for node in graph:
+        for neighbor in graph[node]:
+            in_degree.setdefault(neighbor, 0)
+            in_degree[neighbor] += 1
+
+    queue = deque(n for n, d in in_degree.items() if d == 0)
+    result = []
+    while queue:
+        node = queue.popleft()
+        result.append(node)
+        for n in graph.get(node, []):
+            in_degree[n] -= 1
+            if in_degree[n] == 0:
+                queue.append(n)
+    return result if len(result) == len(in_degree) else []   # [] = cycle
+
+# Cycle in a directed graph — the DFS alternative, with 3 colors. Reaching a GRAY
+# node means the walk has looped back into its own path.
+def has_cycle_directed(graph):
+    WHITE, GRAY, BLACK = 0, 1, 2
+    color = {node: WHITE for node in graph}
+
+    def dfs(node):
+        color[node] = GRAY
+        # .get, not graph[node]: a sink may have no key, and indexing a defaultdict
+        # would insert one while the any() below is still iterating the graph
+        for n in graph.get(node, []):
+            if color.get(n, WHITE) == GRAY: return True
+            if color.get(n, WHITE) == WHITE and dfs(n): return True
+        color[node] = BLACK
+        return False
+
+    return any(color[n] == WHITE and dfs(n) for n in graph)
 ```
 
 ### Topological Sort with a Tie-break
@@ -3629,6 +3610,101 @@ def unique_topological_order(graph, indegree):
 ```
 
 **Sequence Reconstruction** — "is `original` the only sequence consistent with these subsequences?" — is this plus one equality test: build the graph from each adjacent pair of every subsequence, then check `unique_topological_order(graph, indegree) == original`.
+
+### Dijkstra — Non-negative Weights
+
+```python
+import heapq
+from collections import defaultdict
+from math import inf
+
+# graph[node] = {neighbor: weight}. The BFS/DFS templates above use a list of
+# neighbors instead — adjust the inner loop accordingly.
+def dijkstra(graph, start):
+    # Not {node: inf for node in graph}: built from an edge list, a node with no
+    # outgoing edges never becomes a key, and indexing it would raise KeyError
+    distances = defaultdict(lambda: inf)
+    distances[start] = 0
+    pq = [(0, start)]
+    while pq:
+        d, node = heapq.heappop(pq)
+        if d > distances[node]: continue              # stale entry
+        for neighbor, weight in graph.get(node, {}).items():
+            nd = d + weight
+            if nd < distances[neighbor]:
+                distances[neighbor] = nd
+                heapq.heappush(pq, (nd, neighbor))
+    return distances                                  # unreachable → inf on lookup
+```
+
+### 0-1 BFS
+
+```python
+from collections import defaultdict, deque
+from math import inf
+
+# Shortest path when every edge weight is 0 or 1 — O(V + E), no heap.
+# Trick: weight-0 edges go to the FRONT of the deque, weight-1 to the back.
+def zero_one_bfs(graph, start):             # graph[node] = [(neighbor, weight)],
+    dist = defaultdict(lambda: inf)         # every weight ∈ {0, 1}
+    dist[start] = 0
+    dq = deque([start])
+    while dq:
+        node = dq.popleft()
+        for neighbor, w in graph.get(node, []):
+            nd = dist[node] + w
+            if nd < dist[neighbor]:
+                dist[neighbor] = nd
+                if w == 0:
+                    dq.appendleft(neighbor)           # free move — process next
+                else:
+                    dq.append(neighbor)
+    return dist
+```
+
+### Bellman-Ford — Negative Weights
+
+```python
+from math import inf
+
+# A shortest path uses at most n - 1 edges, so n - 1 rounds of relaxing every
+# edge are enough. Handles negative weights and detects negative cycles.
+def bellman_ford(edges, n, start):
+    dist = [inf] * n
+    dist[start] = 0
+    for _ in range(n - 1):
+        for u, v, w in edges:
+            if dist[u] + w < dist[v]:
+                dist[v] = dist[u] + w
+    # One more pass — if anything still relaxes, there's a negative cycle
+    for u, v, w in edges:
+        if dist[u] + w < dist[v]:
+            return None
+    return dist
+```
+
+### Floyd–Warshall — All-pairs Shortest Paths
+
+Every pair at once, for small `n` — O(n³), so n ≤ ~100 in Python. Negative edge weights are fine, unlike Dijkstra.
+
+```python
+from math import inf
+
+def floyd_warshall(n, edges):               # edges: (u, v, w) — add both directions
+    dist = [[inf] * n for _ in range(n)]    # for an undirected graph
+    for i in range(n):
+        dist[i][i] = 0
+    for u, v, w in edges:
+        dist[u][v] = min(dist[u][v], w)     # keep the cheapest parallel edge
+    # After round k, dist[i][j] is the shortest path whose intermediate nodes all
+    # come from 0..k — which is why k has to be the OUTERMOST loop
+    for k in range(n):
+        for i in range(n):
+            for j in range(n):
+                if dist[i][k] + dist[k][j] < dist[i][j]:
+                    dist[i][j] = dist[i][k] + dist[k][j]
+    return dist                             # dist[i][i] < 0 → i lies on a negative cycle
+```
 
 ### Minimum Spanning Tree
 
@@ -3697,7 +3773,7 @@ class Trie:
         node = self._traverse(word)
         return node is not None and node.is_end
 
-    def starts_with(self, prefix):
+    def startsWith(self, prefix):
         return self._traverse(prefix) is not None
 
     def _traverse(self, s):
@@ -3764,7 +3840,7 @@ class WordDictionary:                    # reuses TrieNode from the section abov
     def __init__(self):
         self.root = TrieNode()
 
-    def add(self, word):
+    def addWord(self, word):
         node = self.root
         for c in word:
             node = node.children.setdefault(c, TrieNode())
