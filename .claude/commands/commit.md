@@ -43,8 +43,10 @@ For files that aren't solutions, use the document's own name rather than the der
 - Never add a `Co-Authored-By` trailer or any other trailer.
 - Commit only. Do not push unless explicitly asked.
 - Never force-add gitignored files (`__pycache__/`, `.venv/`, `desktop.ini`).
-- `.gitattributes` stores everything as LF. If git warns about line endings, fix the file — do not
-  change the git config to silence it.
+- `.gitattributes` stores everything as LF. The files listed by `git ls-files --eol | grep 'w/crlf'`
+  are still CRLF on disk; git normalizes them on commit, so the line-ending warning for those is
+  benign — commit them as they are. On any other file the warning means a tool introduced CRLF:
+  fix the file. Never change the git config to silence it.
 
 *Dormant:* the tree once held ~50 empty `algomonster` stubs, so solving one appeared as `M` rather
 than `??` but still counted as an `Add`. None remain, so a modified `.py` is now always an `Update`.
