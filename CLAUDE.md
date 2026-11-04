@@ -43,8 +43,10 @@ throwaway script or `python -c`. Do not add demo blocks to algomonster files tha
 
 Seven early files are the exception and **execute on import** via bare top-level statements (not
 `__main__` guards): all four of `01_sorting/`, plus `02_binary_search/01_binary_search.py`,
-`02_binary_search/07_peak_mountain_array.py`, and `03_two_pointers/16_product_of_array.py`. Leave
-those as they are.
+`02_binary_search/07_peak_mountain_array.py`, and `03_two_pointers/16_product_of_array.py`; all
+seven print. Two more, `09_dynamic_programming/24_divisor_game.py` and `32_perfect_squares.py`,
+call `sys.setrecursionlimit` at module level: nothing is printed, but importing either one raises
+the interpreter's recursion limit. Leave all nine as they are.
 
 Six files in `09_dynamic_programming/` are **comment-only lesson notes** — they carry the syllabus
 explanation for a topic that has no coded exercise of its own, so they contain no executable
@@ -92,7 +94,8 @@ alone rather than hoisted.
   LeetCode signature calls for it. Five files still import `typing.List` — `44_tree_dp.py` and
   `23_prime_sieve.py` in `algomonster/`, and `n_queens.py`, `subsets.py`, `level_order.py` in
   `neetcode/`.
-- Memoization defaults to `from functools import cache` (38 files). `lru_cache` is not banned, but
+- Memoization defaults to `from functools import cache` (33 files; 38 import lines, since some
+  files re-import it mid-file). `lru_cache` is not banned, but
   `09_dynamic_programming/37_interval_dp.py` is now its only live use. Hand-rolled `memo = {}` dicts
   also appear where the point is showing the mechanism, usually as the naive half of a
   naive/`_improved` pair.
@@ -158,10 +161,12 @@ and the vault wikilink — so renaming one means fixing every `](#…)` that poi
 ## Git
 
 `.gitattributes` forces LF in the repo and on checkout for `.py`/`.md`/`.json`, on Windows included —
-don't let a tool reintroduce CRLF. 44 working-tree files are nonetheless CRLF on disk (DP 41–48,
-all of `10_advanced_data_structures/` bar one, and most of `11_miscellaneous/`); git normalizes them
-to LF on commit, so `git diff` stays clean and the warning git prints when touching them is benign.
-`git ls-files --eol | grep 'w/crlf'` lists them.
+don't let a tool reintroduce CRLF. The index is all LF, so a fresh clone has no CRLF files; only a
+working tree written before `.gitattributes` existed can still hold some. The original Windows
+checkout had 44 at last count (DP 41–48, all of `10_advanced_data_structures/` bar one, and most of
+`11_miscellaneous/`). Git normalizes them to LF on commit, so `git diff` stays clean and the warning
+git prints when touching them is benign. `git ls-files --eol | grep 'w/crlf'` lists any that remain;
+deleting one and restoring it with `git checkout -- <path>` rewrites it as LF.
 
 `__pycache__/` is gitignored and appears under most `neetcode/` directories plus
 `algomonster/10_advanced_data_structures/` — ignore it when counting files.
