@@ -61,9 +61,9 @@ $ python -m neetcode.trees.invert_tree     # works
 $ python neetcode/trees/invert_tree.py     # ModuleNotFoundError
 ```
 
-Only five files print anything:
+Only five files have a `__main__` demo:
 `arrays_hashes/{contains_duplicate,group_anagrams,two_sum,valid_anagrams}.py` and
-`backtracking/n_queens.py` each end in a `__main__` block. That is the repo's entire test harness.
+`backtracking/n_queens.py`. That is the repo's entire test harness.
 
 `algomonster/` files have no cross-file imports — each defines whatever `Node` / `ListNode` it needs
 inline. Most define functions only, so importing one does nothing visible; to exercise it, import it
@@ -88,7 +88,8 @@ cover every technique that appears anywhere in the two solution trees.
 
 ### CHEATSHEET.md — syntax only, one-liners, no algorithms
 
-- Types and ranges: integers (base conversion, bit introspection, sentinels), `range`, strings, booleans
+- Types and ranges: integers (ceiling division, base conversion, bit introspection, sentinels),
+  `range`, strings, booleans
 - Built-in structures: lists, sets, dicts, tuples, stacks, deques
 - Node skeletons for linked lists and trees
 - `collections` (Counter, defaultdict, OrderedDict, deque), `heapq`, `math`, `string`, `random`,
@@ -103,8 +104,8 @@ Start at **[Choosing a Pattern](PATTERNS.md#choosing-a-pattern)**: input bound �
 complexity → technique, and a table mapping problem wording to the section that solves it.
 
 - **Sorting:** built-in sort and `cmp_to_key`, merge sort (and the reusable merge step), the O(n²) sorts
-- **Searching:** Binary Search (both patterns), first/last occurrence, rotated array, mountain peak,
-  2D matrix, Binary Search on Answer
+- **Searching:** Binary Search (both patterns, tracking as the default), first/last occurrence,
+  rotated array, mountain peak, 2D matrix, Binary Search on Answer (minimum and maximum)
 - **Two-pointer family:** Two Pointers, Fast & Slow Pointers, Sliding Window (and the one rule that
   separates longest-window from shortest-window problems)
 - **Array tricks:** Prefix Sum (1D & 2D) and prefix products, Hashing, Monotonic Stack (incl. the
@@ -118,8 +119,8 @@ complexity → technique, and a table mapping problem wording to the section tha
 - **Bits & math:** Bit Manipulation, Math / Number Theory (sieve, nth prime, modpow)
 - **Data structures:** Linked Lists, Trees, BSTs, Matrix, Graphs, Trie, Union-Find, Segment Tree
 - **Graphs in depth:** DFS/BFS, multi-source and 0-1 BFS, implicit state-space BFS (word ladder,
-  sliding puzzle), topological sort (incl. tie-breaking and uniqueness), Dijkstra, Bellman-Ford,
-  Floyd–Warshall, MST (Kruskal & Prim)
+  sliding puzzle), topological sort (incl. tie-breaking, uniqueness, and DP in topological order),
+  Dijkstra, Bellman-Ford, Floyd–Warshall, MST (Kruskal & Prim)
 - **Design:** LRU Cache (OrderedDict + from-scratch DLL versions)
 
 ---
