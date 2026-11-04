@@ -122,6 +122,11 @@ divmod(10, 3)    # (3, 1) — quotient and remainder
 5 // 2           # 2 (floor division)
 5 % 2            # 1 (modulo)
 
+# Ceiling division: stay in ints. math.ceil(a / b) detours through a float and goes
+# wrong past 2**53: math.ceil((10**17 + 1) / 10) gives 10**16, not 10**16 + 1
+-(-a // b)       # ceil(a / b), any signs
+(a + b - 1) // b # same, for b > 0
+
 # Negative numbers — // and % round towards NEGATIVE infinity, not towards zero
 -3 // 2          # -2 (NOT -1)
 int(-3 / 2)      # -1 (truncates towards zero)
@@ -190,8 +195,9 @@ s.capitalize()              # Capitalize first letter
 s.swapcase()                # invert case
 
 # Checks
-s.isalpha()                 # only letters (a-z, A-Z)
-s.isdigit()                 # only digits (0-9)
+s.isalpha()                 # letters, non-ASCII too: 'é' passes
+s.isdigit()                 # digits, non-ASCII too: '²' passes, but int('²') raises
+s.isascii() and s.isdigit() # strictly 0-9
 "-5".isdigit()              # False — a sign is not a digit; parse signed tokens with int()
 s.isalnum()                 # letters and digits
 s.isspace()                 # only whitespace
@@ -476,6 +482,9 @@ dq.extendleft([1, 2, 3])   # order reversed!
 dq.pop()                   # remove from right
 dq.popleft()               # remove from left
 
+# Peeking: both ends are O(1); indexing toward the middle is O(n)
+dq[0], dq[-1]
+
 # Other
 dq.rotate(n)               # rotate n steps right (negative for left)
 dq.reverse()
@@ -529,6 +538,13 @@ from collections import Counter
 c = Counter()
 c = Counter([1, 2, 2, 3, 3, 3])   # Counter({3: 3, 2: 2, 1: 1})
 c = Counter("hello")              # Counter({'l': 2, 'h': 1, ...})
+
+# A missing key reads as 0, and unlike defaultdict the read inserts nothing
+c['z']                            # 0, and 'z' in c is still False
+
+# Equality ignores zero counts (Python 3.10+), which makes it the anagram check
+Counter(s) == Counter(t)
+Counter(a=1, b=0) == Counter(a=1)   # True
 
 # Most common
 c.most_common()              # all, most common first
@@ -786,12 +802,15 @@ list(itertools.islice(range(20), 2, 8, 2))          # [2, 4, 6]
 ```python
 import bisect
 
-arr = [1, 3, 5, 7, 9, 11]
+arr = [1, 3, 5, 5, 7, 9]
 
-# Insertion points (binary search)
-bisect.bisect_left(arr, 5)    # 2 — leftmost position
-bisect.bisect_right(arr, 5)   # 3 — rightmost position
+# Insertion points (binary search), and what the index means
+bisect.bisect_left(arr, 5)    # 2: first i with arr[i] >= 5, so also how many are < 5
+bisect.bisect_right(arr, 5)   # 4: first i with arr[i] > 5, so also how many are <= 5
 bisect.bisect(arr, 5)         # same as bisect_right
+
+# Count the values in [lo, hi]
+bisect.bisect_right(arr, 7) - bisect.bisect_left(arr, 3)   # 4: the 3, 5, 5, 7
 
 # Insert in sorted order — O(n) due to list shift
 bisect.insort_left(arr, 4)
