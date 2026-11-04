@@ -175,8 +175,12 @@ def insertion_sort(nums):           # stable; O(n) on nearly-sorted input
 
 ### The 2 Essential Patterns
 
-- **Pattern 1: `while left <= right`** — exact target or best candidate
-- **Pattern 2: `while left < right`** — boundary where condition flips
+- **Pattern 1: `while left <= right`** — exact target, or the best candidate tracked in `result`
+- **Pattern 2: `while left < right`** — boundary where condition flips, no `result` needed
+
+**Default to Pattern 1.** With a tracked `result`, one loop shape covers an exact match, a first or last occurrence, a boundary, and both the minimum and the maximum answer, and an absent answer simply leaves `result` at its initial value. Pattern 2 saves the variable, but it can never report "not found", and using it to find a maximum needs an upper midpoint.
+
+Python ints never overflow, so the midpoint is plainly `(left + right) // 2`; `left + (right - left) // 2` is a habit carried over from C++ and Java.
 
 ### Pattern 1 — Classic Binary Search
 
@@ -184,7 +188,7 @@ def insertion_sort(nums):           # stable; O(n) on nearly-sorted input
 def binary_search(arr, target):
     left, right = 0, len(arr) - 1
     while left <= right:
-        mid = left + (right - left) // 2
+        mid = (left + right) // 2
         if arr[mid] == target:
             return mid
         elif arr[mid] < target:
@@ -198,32 +202,36 @@ def binary_search(arr, target):
 
 - Both pointers move past mid: `left = mid + 1`, `right = mid - 1`
 - Loop continues while valid range exists; ends with `left > right`
-- Track `result` separately if you want the best candidate (not exact match)
+- Track a `result` to get the best candidate rather than an exact match: [Pattern 1 with Tracking](#pattern-1-with-tracking--find-the-boundary)
 
 **Common problems:** standard search, rotated sorted array, find largest X where condition holds, square root, TimeMap.
 
-### Pattern 2 — Find Boundary
+### Pattern 1 with Tracking — Find the Boundary
+
+The workhorse. Ask a yes/no question of `mid`; on a yes, record `mid` as a candidate and keep searching the half that could hold a better one.
 
 ```python
-def find_boundary(nums):
+def find_boundary(nums):                 # first index where condition(nums[i]) holds
     left, right = 0, len(nums) - 1
-    while left < right:
+    result = -1                          # stays -1 when nothing qualifies
+    while left <= right:
         mid = (left + right) // 2
         if condition(nums[mid]):
-            right = mid          # mid might be the answer — keep it
+            result = mid                 # a candidate; an earlier one may still exist
+            right = mid - 1
         else:
-            left = mid + 1       # mid is not the answer — skip it
-    return left                  # left == right is the answer
+            left = mid + 1
+    return result
 ```
 
 **Characteristics:**
 
-- `right = mid` (never `mid - 1`) and `left = mid + 1` (never `mid` — would infinite-loop)
-- Loop ends when `left == right` — no separate result tracking
-- It always returns an index, even when nothing satisfies the condition: searching `[1, 3, 5, 7]` for the first value `>= 9` returns 3, which is indistinguishable from a real hit. Either guarantee an answer exists in the range, or test `condition(nums[left])` before trusting it.
-- Seeding `right = len(nums)` instead of `len(nums) - 1` gives the `bisect_left` convention, where a failed search returns `n` and is unambiguous.
+- Both pointers still move past `mid`, so every pass shrinks the range; `result` remembers the best `mid` seen
+- "Not found" is unambiguous: `result` keeps its initial value
+- For the **last** index where the condition holds, flip the moves: on a yes, set `result = mid` and `left = mid + 1`
+- For an insertion position, start with `result = len(nums)` so that "after everything" is a valid answer
 
-**Common problems:** find min in rotated sorted array, insertion position, Koko eating bananas, capacity to ship packages. For first/last occurrence, prefer the tracking version below — an absent target needs to be reportable.
+**Common problems:** first true in a boolean array, first element not smaller than a target, insertion position, find min in rotated sorted array, peak of a mountain array, and every [Binary Search on Answer](#binary-search-on-answer) problem.
 
 ### Find First / Last Occurrence — Pattern 1 with Tracking
 
@@ -232,7 +240,7 @@ def find_first(arr, target):
     left, right = 0, len(arr) - 1
     result = -1
     while left <= right:
-        mid = left + (right - left) // 2
+        mid = (left + right) // 2
         if arr[mid] == target:
             result = mid
             right = mid - 1            # keep searching left
@@ -246,7 +254,7 @@ def find_last(arr, target):
     left, right = 0, len(arr) - 1
     result = -1
     while left <= right:
-        mid = left + (right - left) // 2
+        mid = (left + right) // 2
         if arr[mid] == target:
             result = mid
             left = mid + 1             # keep searching right
@@ -283,39 +291,43 @@ def search_rotated(nums, target):
     return -1
 ```
 
-**Find the minimum** is the same insight with no target to match, so it collapses to Pattern 2 — but compare against `nums[right]`, never `nums[left]`:
+**Find the minimum** is a boundary search in disguise: every value from the rotation point onward is `<= nums[-1]` and every value before it is larger, so the minimum is the first index where `nums[i] <= nums[-1]`.
 
 ```python
 def find_min_rotated(nums):
     left, right = 0, len(nums) - 1
-    while left < right:
+    result = len(nums) - 1               # the last element always qualifies
+    while left <= right:
         mid = (left + right) // 2
-        if nums[mid] > nums[right]:
-            left = mid + 1               # rotation point is strictly right of mid
+        if nums[mid] <= nums[-1]:        # at or past the rotation point: a candidate
+            result = mid
+            right = mid - 1
         else:
-            right = mid                  # mid may be the minimum — keep it
-    return nums[left]
+            left = mid + 1               # before the rotation point
+    return nums[result]
 ```
 
-`nums[mid] > nums[left]` is true of an array that was never rotated, so a left-hand comparison walks away from a minimum sitting at index 0. `nums[right]` has no such blind spot.
+Compare against the last element, never the first: `nums[mid] >= nums[0]` holds everywhere in an array that was never rotated, so a left-hand test walks away from a minimum sitting at index 0. `nums[-1]` has no such blind spot.
 
 ### Peak of a Mountain Array
 
-There is no target here — the predicate is the **shape**. `arr[mid] > arr[mid + 1]` means the descent has already begun, so the peak is `mid` or lies to its left; otherwise you are still climbing and it is strictly right. Pattern 2, so `right = mid` never steps over the answer.
+There is no target here — the predicate is the **shape**. `arr[mid] > arr[mid + 1]` means the descent has already begun, so the peak is `mid` or lies to its left; otherwise you are still climbing and it is strictly right. That makes the peak the first index where `arr[i] > arr[i + 1]`, a plain boundary search.
 
 ```python
 def peak_index(arr):
-    left, right = 0, len(arr) - 1
-    while left < right:
+    left, right = 0, len(arr) - 2        # stop one short so arr[mid + 1] exists
+    result = len(arr) - 1                # no descent at all: the last index is the peak
+    while left <= right:
         mid = (left + right) // 2
         if arr[mid] > arr[mid + 1]:
-            right = mid              # still on or before the peak — keep mid
+            result = mid                 # descending: the peak is mid or to its left
+            right = mid - 1
         else:
-            left = mid + 1           # still climbing
-    return left
+            left = mid + 1               # still climbing
+    return result
 ```
 
-`mid + 1` can never run off the end: `left < right` forces `mid < right`. The same comparison finds *a* local peak in a fully unsorted array (Find Peak Element) — it always points uphill, and any uphill walk on a bounded array must stop somewhere.
+The same comparison finds *a* local peak in a fully unsorted array (Find Peak Element): it always points uphill, and any uphill walk on a bounded array must stop somewhere.
 
 ### Binary Search on a 2D Matrix
 
@@ -341,22 +353,79 @@ O(log(rows · cols)). If the rows are individually sorted but *not* globally ord
 
 ### Binary Search on Answer
 
-When the question is "find the minimum/maximum X such that condition(X) holds", binary-search over the answer space:
+When the question is "find the minimum/maximum X such that condition(X) holds", binary-search over the answer space. The test must be monotonic, and the two directions differ only in which pointer moves after a feasible `mid`:
 
 ```python
+# Minimum: the slowest eating speed that still finishes within h hours
 def min_eating_speed(piles, h):
     def can_finish(k):
-        return sum((p + k - 1) // k for p in piles) <= h
+        return sum((p + k - 1) // k for p in piles) <= h     # ceil(p / k) in ints
 
     left, right = 1, max(piles)
-    while left < right:
+    result = right
+    while left <= right:
         mid = (left + right) // 2
         if can_finish(mid):
-            right = mid
+            result = mid
+            right = mid - 1              # feasible: record it, then try smaller
         else:
             left = mid + 1
+    return result
+
+# Maximum: the largest x with x * x <= n, i.e. the integer square root
+def int_sqrt(n):
+    left, right = 0, n
+    result = 0
+    while left <= right:
+        mid = (left + right) // 2
+        if mid * mid <= n:
+            result = mid
+            left = mid + 1               # feasible: record it, then try larger
+        else:
+            right = mid - 1
+    return result
+```
+
+Bound the range by the smallest and largest answers that could possibly be right, not by the input's indices.
+
+### Pattern 2 — Find Boundary
+
+The alternative to [tracking a result](#pattern-1-with-tracking--find-the-boundary): keep the candidate inside the range instead of in a variable, and stop when the range is down to one index.
+
+```python
+def first_true(nums):
+    left, right = 0, len(nums) - 1
+    while left < right:
+        mid = (left + right) // 2
+        if condition(nums[mid]):
+            right = mid          # mid might be the answer — keep it
+        else:
+            left = mid + 1       # mid is not the answer — skip it
+    return left                  # left == right is the answer
+```
+
+**Characteristics:**
+
+- `right = mid` (never `mid - 1`) and `left = mid + 1` (never `mid` — would infinite-loop)
+- Loop ends when `left == right` — no separate result tracking
+- It always returns an index, even when nothing satisfies the condition: searching `[1, 3, 5, 7]` for the first value `>= 9` returns 3, which is indistinguishable from a real hit. Either guarantee an answer exists in the range, or test `condition(nums[left])` before trusting it.
+- Seeding `right = len(nums)` instead of `len(nums) - 1` gives the `bisect_left` convention, where a failed search returns `n` and is unambiguous.
+
+**Searching for a maximum** mirrors every move, and the midpoint must round up. With `(left + right) // 2`, a two-element range gives `mid == left`, so `left = mid` never moves and the loop spins forever.
+
+```python
+def last_true(lo, hi):                   # largest x in [lo, hi] where condition(x) holds
+    left, right = lo, hi
+    while left < right:
+        mid = (left + right + 1) // 2    # upper midpoint, so left = mid always moves
+        if condition(mid):
+            left = mid
+        else:
+            right = mid - 1
     return left
 ```
+
+**When to reach for it:** an answer is guaranteed to exist, as with a mountain's peak or a rotated array's minimum, and you want a line less. Everywhere else, tracking is the safer default.
 
 ---
 
@@ -1373,9 +1442,7 @@ def rectangle_area_ii(rectangles):
     total = 0
 
     for xl, xr in zip(xs, xs[1:]):
-        width = xr - xl
-        if width == 0:
-            continue
+        width = xr - xl                          # never 0: xs holds distinct values
         spans = sorted(
             (y1, y2)
             for x1, y1, x2, y2 in rectangles
@@ -1799,7 +1866,7 @@ See [Dynamic Programming](#dynamic-programming) for the full treatment, and [Wor
 - **Top-down (memoization):** write the recurrence as a recursive function, cache results.
 - **Bottom-up (tabulation):** fill a `dp` table iteratively from base cases.
 
-Top-down is usually the faster route under interview pressure: write the brute-force recursion, confirm the base cases, add `@cache`. Convert to a table only if you need the space optimisation or the interviewer asks.
+Top-down is usually the faster route under interview pressure: write the brute-force recursion, confirm the base cases, add `@cache`. Convert to a table only if you need the space optimisation, the interviewer asks, or the recursion would run deeper than Python's default limit of 1000 frames (`sys.setrecursionlimit` is the quick fix).
 
 ### Recognising a DP Problem
 
@@ -2014,6 +2081,7 @@ def minimum_total(triangle):
 
 # Maximal Square — dp[r][c] = side of the largest all-ones square ENDING at (r, c).
 # It is limited by the worst of its three neighbours, hence min(...) + 1.
+# Cells are ints here; LeetCode passes '0'/'1' strings, so test == '0' there.
 def maximal_square(matrix):
     @cache
     def dfs(r, c):
@@ -2082,6 +2150,8 @@ def length_of_LIS(nums):
 
 Two strings, state `(i, j)` = one index into each. Characters match → consume both and move diagonally; otherwise branch on which side to advance. Every problem below is that skeleton with a different objective.
 
+Top-down, the recursion runs up to `len(a) + len(b)` frames deep, so two 500-character strings already pass Python's default limit of 1000: call `sys.setrecursionlimit` first, or tabulate.
+
 | Problem | On match | On mismatch |
 | --- | --- | --- |
 | Longest Common Subsequence | `1 + dp(i+1, j+1)` | `max(dp(i+1, j), dp(i, j+1))` |
@@ -2093,35 +2163,37 @@ Two strings, state `(i, j)` = one index into each. Characters match → consume 
 ### Longest Common Subsequence
 
 ```python
+from functools import cache
+
 def lcs(text1, text2):
-    m, n = len(text1), len(text2)
-    dp = [[0] * (n + 1) for _ in range(m + 1)]
-    for i in range(1, m + 1):
-        for j in range(1, n + 1):
-            if text1[i - 1] == text2[j - 1]:
-                dp[i][j] = dp[i - 1][j - 1] + 1
-            else:
-                dp[i][j] = max(dp[i - 1][j], dp[i][j - 1])
-    return dp[m][n]
+    @cache
+    def dfs(i, j):
+        if i == len(text1) or j == len(text2):
+            return 0                         # one string is used up
+        if text1[i] == text2[j]:
+            return 1 + dfs(i + 1, j + 1)
+        return max(dfs(i + 1, j), dfs(i, j + 1))
+    return dfs(0, 0)
 ```
 
 ### Edit Distance — Levenshtein
 
 ```python
+from functools import cache
+
 def min_distance(word1, word2):
-    m, n = len(word1), len(word2)
-    dp = [[0] * (n + 1) for _ in range(m + 1)]
-    for i in range(m + 1): dp[i][0] = i
-    for j in range(n + 1): dp[0][j] = j
-    for i in range(1, m + 1):
-        for j in range(1, n + 1):
-            if word1[i - 1] == word2[j - 1]:
-                dp[i][j] = dp[i - 1][j - 1]
-            else:
-                dp[i][j] = 1 + min(dp[i - 1][j],         # delete
-                                   dp[i][j - 1],         # insert
-                                   dp[i - 1][j - 1])     # replace
-    return dp[m][n]
+    @cache
+    def dfs(i, j):
+        if i == len(word1):
+            return len(word2) - j            # insert whatever word2 has left
+        if j == len(word2):
+            return len(word1) - i            # delete whatever word1 has left
+        if word1[i] == word2[j]:
+            return dfs(i + 1, j + 1)
+        return 1 + min(dfs(i + 1, j),        # delete word1[i]
+                       dfs(i, j + 1),        # insert word2[j]
+                       dfs(i + 1, j + 1))    # replace word1[i] with word2[j]
+    return dfs(0, 0)
 ```
 
 ### Distinct Subsequences
@@ -2416,7 +2488,7 @@ def min_cut(s):
 
 ### Interval DP
 
-State is a **range** `(i, j)` rather than a prefix, and the recurrence either shrinks the range from both ends or splits it at some `k`. Iterate by increasing length so shorter ranges are solved first.
+State is a **range** `(i, j)` rather than a prefix, and the recurrence either shrinks the range from both ends or splits it at some `k`. Bottom-up, iterate by increasing length so shorter ranges are solved first; with `@cache`, as below, the recursion gets that order for free.
 
 ```python
 from functools import cache
@@ -2478,7 +2550,7 @@ def divisor_game(n):
 
 ### DP on a DAG
 
-Whenever the transitions are acyclic, memoised DFS *is* the DP — no explicit topological order needed, since recursion supplies one. Look for an ordering that guarantees acyclicity: strictly increasing values, strictly shorter strings, divisibility after sorting.
+Whenever the transitions are acyclic, memoised DFS *is* the DP — no explicit topological order needed, since recursion supplies one. Look for an ordering that guarantees acyclicity: strictly increasing values, strictly shorter strings, divisibility after sorting. To run the same DP iteratively, process nodes in [topological order](#dp-in-topological-order).
 
 ```python
 from functools import cache
@@ -2687,6 +2759,8 @@ import math
 
 # Sieve of Eratosthenes — all primes ≤ n in O(n log log n)
 def sieve(n):
+    if n < 2:
+        return []                            # is_prime[1] below would not exist
     is_prime = [True] * (n + 1)
     is_prime[0] = is_prime[1] = False
     for i in range(2, math.isqrt(n) + 1):    # isqrt: exact, unlike int(n**0.5)
@@ -3228,12 +3302,28 @@ def rotate(matrix):
 # One-liner (new matrix):
 #   rotated = [list(row) for row in zip(*matrix[::-1])]
 
-# Spiral traversal
+# Spiral traversal: read the four borders in turn, pulling each one inward once read
 def spiral_order(matrix):
     result = []
-    while matrix:
-        result += matrix.pop(0)                       # top row
-        matrix = [list(row) for row in zip(*matrix)][::-1]  # rotate ccw
+    top, bottom = 0, len(matrix) - 1
+    left, right = 0, len(matrix[0]) - 1
+    while top <= bottom and left <= right:
+        for c in range(left, right + 1):              # top row, left to right
+            result.append(matrix[top][c])
+        top += 1
+        for r in range(top, bottom + 1):              # right column, downward
+            result.append(matrix[r][right])
+        right -= 1
+        # a lone remaining row or column was fully read by the two passes above;
+        # without this check the next two passes read it again backwards
+        if top > bottom or left > right:
+            break
+        for c in range(right, left - 1, -1):          # bottom row, right to left
+            result.append(matrix[bottom][c])
+        bottom -= 1
+        for r in range(bottom, top - 1, -1):          # left column, upward
+            result.append(matrix[r][left])
+        left += 1
     return result
 
 # Flood fill / number of islands (DFS). The recursion can go rows × cols deep —
@@ -3611,6 +3701,35 @@ def unique_topological_order(graph, indegree):
 
 **Sequence Reconstruction** — "is `original` the only sequence consistent with these subsequences?" — is this plus one equality test: build the graph from each adjacent pair of every subsequence, then check `unique_topological_order(graph, indegree) == original`.
 
+### DP in Topological Order
+
+Kahn's order is also a DP order: a node leaves the queue only after every edge into it has been processed, so its value is final when it is popped. Relax each outgoing edge as you go, and longest-path questions on a DAG, such as the earliest time every task can finish, come out in O(V + E) with no recursion.
+
+```python
+from collections import deque
+
+# Earliest finish time: each task takes duration[task] and may start only once
+# every prerequisite has finished. graph[task] = the tasks that depend on it.
+def earliest_finish(graph, duration):
+    indegree = {task: 0 for task in graph}
+    for task in graph:
+        for nxt in graph[task]:
+            indegree[nxt] += 1
+
+    finish = {task: duration[task] for task in graph}     # if started at time 0
+    queue = deque(task for task in graph if indegree[task] == 0)
+    while queue:
+        task = queue.popleft()
+        for nxt in graph[task]:
+            finish[nxt] = max(finish[nxt], finish[task] + duration[nxt])
+            indegree[nxt] -= 1
+            if indegree[nxt] == 0:
+                queue.append(nxt)
+    return max(finish.values(), default=0)
+```
+
+The recursive form of the same DP is memoised DFS: see [DP on a DAG](#dp-on-a-dag).
+
 ### Dijkstra — Non-negative Weights
 
 ```python
@@ -3727,7 +3846,7 @@ def minimum_spanning_tree(n, edges):        # edges: (weight, a, b)
 
 O(E log E), dominated by the sort. If the graph is disconnected the same loop returns a **minimum spanning forest** — just drop the early exit and report `taken` alongside the total.
 
-**Prim** — grow one tree, always taking the cheapest edge leaving it. Better on dense graphs.
+**Prim** — grow one tree, always taking the cheapest edge leaving it. With a heap it is O(E log V), the same as Kruskal; only the heap-free O(V²) version, which scans for the cheapest frontier node, pulls ahead on dense graphs.
 
 ```python
 import heapq
@@ -3967,11 +4086,15 @@ class DictUnionFind:                   # distinct name — the one above is Unio
     def __init__(self):
         self.id = {}
 
+    # Iterative on purpose: with no union by rank, union(i, i + 1) in a loop grows
+    # one long chain, and a recursive find would pass Python's 1000-frame limit
     def find(self, x):
-        y = self.id.get(x, x)          # unseen elements are their own root
-        if y != x:
-            self.id[x] = y = self.find(y)
-        return y
+        root = x
+        while self.id.get(root, root) != root:   # unseen elements are their own root
+            root = self.id[root]
+        while x != root:                         # point the whole path at the root
+            self.id[x], x = root, self.id[x]
+        return root
 
     def union(self, x, y):
         self.id[self.find(x)] = self.find(y)
