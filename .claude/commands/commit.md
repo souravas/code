@@ -33,7 +33,7 @@ turned into spaces: `09_dynamic_programming/28_target_sum.py` → `target sum`.
 | Renamed to a different name | `Rename <old> to <new>` | `Rename max area to container water` |
 
 For files that aren't solutions, use the document's own name rather than the derived one:
-`Update Cheatsheet`, `Update Patterns`, `Update README`, `Update CLAUDE.md`, `Update commit command`.
+`Update README`, `Update CLAUDE.md`, `Update commit command`.
 
 ## Rules
 
