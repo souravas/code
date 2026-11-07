@@ -8,21 +8,18 @@ A personal coding-interview prep repo: Python 3.14, standard library only. No bu
 dependencies, no test framework, no linter config. Solutions are worked through by hand and read
 back later for review, so clarity of the solution itself is the product.
 
-Two top-level solution trees (245 solution files). `README.md`, the GitHub landing page, only links
-to <https://souravas.com/code>, which holds the reference documents and the overview of this repo;
-see [The reference documents](#the-reference-documents).
+Two solution trees, every directory fully solved (no empty or placeholder files):
 
 ```
-algomonster/  01_sorting(4)   02_binary_search(8)   03_two_pointers(19)
-              04_depth_first_search(16)  05_backtracking(16)  06_breadth_first_search(5)
-              07_graph(22)  08_heap(8)  09_dynamic_programming(48)
-              10_advanced_data_structures(15)  11_miscellaneous(25)
-neetcode/     arrays_hashes(9)  backtracking(2)  binary_search(5)  heap(4)
-              linked_list(9)  math_geometry(2)  sliding_window(6)  stack(6)
-              trees(11)  two_pointers(5)
+algomonster/  01_sorting  02_binary_search  03_two_pointers  04_depth_first_search
+              05_backtracking  06_breadth_first_search  07_graph  08_heap
+              09_dynamic_programming  10_advanced_data_structures  11_miscellaneous
+neetcode/     arrays_hashes  backtracking  binary_search  heap  linked_list
+              math_geometry  sliding_window  stack  trees  two_pointers
 ```
 
-Every directory is fully solved — there are no empty or placeholder files left anywhere in the tree.
+`README.md`, the GitHub landing page, only links to <https://souravas.com/code>, which holds the
+reference documents and the overview of this repo; see [The reference documents](#the-reference-documents).
 
 ## Running code
 
@@ -40,17 +37,17 @@ python neetcode/trees/invert_tree.py        # ModuleNotFoundError
 inline. Most define functions only, so importing them does nothing; to exercise one, import it in a
 throwaway script or `python -c`. Do not add demo blocks to algomonster files that lack them.
 
-Seven early files are the exception and **execute on import** via bare top-level statements (not
-`__main__` guards): all four of `01_sorting/`, plus `02_binary_search/01_binary_search.py`,
-`02_binary_search/07_peak_mountain_array.py`, and `03_two_pointers/16_product_of_array.py`; all
-seven print. Two more, `09_dynamic_programming/24_divisor_game.py` and `32_perfect_squares.py`,
-call `sys.setrecursionlimit` at module level: nothing is printed, but importing either one raises
-the interpreter's recursion limit. Leave all nine as they are.
+Leave these exceptions as they are:
 
-Six files in `09_dynamic_programming/` are **comment-only lesson notes** — they carry the syllabus
-explanation for a topic that has no coded exercise of its own, so they contain no executable
-statements: `07_grid.py`, `25_knapsack_dp.py`, `33_0_1_knapsack.py`, `41_topological_sort_dp.py`,
-`46_bitmask.py`, `47_bitmask_dp.py`. They are deliberate, not stubs.
+- **Seven files execute on import** via bare top-level statements (not `__main__` guards), and all
+  seven print: all four of `01_sorting/`, plus `02_binary_search/01_binary_search.py`,
+  `02_binary_search/07_peak_mountain_array.py` and `03_two_pointers/16_product_of_array.py`.
+- **Two files raise the recursion limit on import**: `09_dynamic_programming/24_divisor_game.py` and
+  `32_perfect_squares.py` call `sys.setrecursionlimit` at module level.
+- **Six files in `09_dynamic_programming/` are comment-only lesson notes**, carrying the syllabus
+  explanation for a topic with no coded exercise of its own: `07_grid.py`, `25_knapsack_dp.py`,
+  `33_0_1_knapsack.py`, `41_topological_sort_dp.py`, `46_bitmask.py`, `47_bitmask_dp.py`. They are
+  deliberate, not stubs.
 
 ## The two trees have deliberately different conventions
 
@@ -75,11 +72,11 @@ tree). Match on the numeric prefix, not the name.
   are imported, not redefined.
 - Multiple approaches become numbered method variants on the same class (`groupAnagrams1`,
   `groupAnagrams2`), or a plain helper method where the split is by role (`evalRPN` / `resolve`).
-- Five files end with an `if __name__ == "__main__":` block that instantiates `Solution()` and prints
-  a sample call — `arrays_hashes/{contains_duplicate,group_anagrams,two_sum,valid_anagrams}.py` and
-  `backtracking/n_queens.py`. This is the only informal test harness in the repo.
 - Design problems are a bare class with the LeetCode-specified name, not a `Solution` wrapper —
   `KthLargest`, `MinStack`, `LRUCache`.
+- Five files end with an `if __name__ == "__main__":` block that prints a sample call —
+  `arrays_hashes/{contains_duplicate,group_anagrams,two_sum,valid_anagrams}.py` and
+  `backtracking/n_queens.py`. This is the only informal test harness in the repo.
 
 Some files carry a second import mid-file (e.g. `from functools import cache` reappearing before an
 `_improved` variant that needs it). That mirrors how the solution was worked through and is left
@@ -89,17 +86,13 @@ alone rather than hoisted.
 
 - No docstrings anywhere. Comments are rare and reserved for the non-obvious insight behind a step
   (e.g. why the smaller side advances in trapping-rain-water), never for restating the code.
-- Built-in generics (`list[int]`, `dict[str, int]`) over `typing.List`; `Optional` is used where a
-  LeetCode signature calls for it. Five files still import `typing.List` — `44_tree_dp.py` and
-  `23_prime_sieve.py` in `algomonster/`, and `n_queens.py`, `subsets.py`, `level_order.py` in
-  `neetcode/`.
-- Memoization defaults to `from functools import cache` (33 files; 38 import lines, since some
-  files re-import it mid-file). `lru_cache` is not banned, but
-  `09_dynamic_programming/37_interval_dp.py` is now its only live use. Hand-rolled `memo = {}` dicts
-  also appear where the point is showing the mechanism, usually as the naive half of a
-  naive/`_improved` pair.
-- `from math import inf` (10 files) is preferred over `float("inf")` in newer files; both are present.
-  Return types are annotated `int | float` where a function can return `inf`.
+- Built-in generics (`list[int]`, `dict[str, int]`) over `typing.List`, though a few older files
+  still import it; `Optional` is used where a LeetCode signature calls for it.
+- Memoization defaults to `from functools import cache`; `lru_cache` appears but isn't the default.
+  Hand-rolled `memo = {}` dicts appear where the point is showing the mechanism, usually as the
+  naive half of a naive/`_improved` pair.
+- `from math import inf` is preferred over `float("inf")` in newer files; both are present. Return
+  types are annotated `int | float` where a function can return `inf`.
 - The whole tree is black-clean under default settings (88 cols, double quotes, trailing commas,
   4-space indent) — keep it that way. Black is neither on `PATH` nor a project dependency; the VS Code
   extension bundles the only copy, which runs fine against Python 3.14:
@@ -111,12 +104,13 @@ alone rather than hoisted.
 
 ## The reference documents
 
-They no longer live in this repo. `CHEATSHEET.md` (**syntax only** — one-liners, stdlib APIs, idioms,
+They don't live in this repo. `CHEATSHEET.md` (**syntax only** — one-liners, stdlib APIs, idioms,
 no algorithms), `PATTERNS.md` (**algorithm templates** — full adaptable implementations) and the
 overview of this repo are one page, <https://souravas.com/code>. The only copy is `code/` in the site
 repo (`souravas/souravas.github.io`, checked out at `../souravas.github.io`), and that repo's
-`CLAUDE.md` has the rules for editing them. The overview, `code/README.md` there, repeats the file
-counts and exceptions listed in this file, so update the two together.
+`CLAUDE.md` has the rules for editing them. The overview, `code/README.md` there, lists each
+directory's file count and the exceptions above, so update it when solutions are added, removed or
+moved.
 
 Between them the pair is meant to cover **every technique that appears anywhere in the two solution
 trees**, so a newly solved problem that introduces a technique not yet documented should be reflected
@@ -127,18 +121,14 @@ surrounding template does not.
 ## Git
 
 `.gitattributes` forces LF in the repo and on checkout for `.py`/`.md`/`.json`, on Windows included —
-don't let a tool reintroduce CRLF. The index is all LF, so a fresh clone has no CRLF files; only a
-working tree written before `.gitattributes` existed can still hold some. The original Windows
-checkout had 44 at last count (DP 41–48, all of `10_advanced_data_structures/` bar one, and most of
-`11_miscellaneous/`). Git normalizes them to LF on commit, so `git diff` stays clean and the warning
-git prints when touching them is benign. `git ls-files --eol | grep 'w/crlf'` lists any that remain;
-deleting one and restoring it with `git checkout -- <path>` rewrites it as LF.
+don't let a tool reintroduce CRLF. The index is all LF, but a working tree written before
+`.gitattributes` existed (like the original Windows checkout) can still hold CRLF files. Git
+normalizes them on commit, so the line-ending warning for those is benign.
+`git ls-files --eol | grep 'w/crlf'` lists them; deleting one and restoring it with
+`git checkout -- <path>` rewrites it as LF.
 
-`__pycache__/` is gitignored and appears under most `neetcode/` directories plus
-`algomonster/10_advanced_data_structures/` — ignore it when counting files.
+`__pycache__/` is gitignored; ignore it when counting files.
 
-Commits are one file each, subject-only, present tense, sentence case — capitalize the first word
-only: `Add target sum`, `Update word break`, `Rename lowest common ancestor`.
-`.claude/commands/commit.md` (the `/commit` command) is the authoritative spec and carries the full
-message table. Its rule that solving an empty placeholder counts as `Add` rather than `Update` is
-now dormant — no empty placeholders remain — but the file is still the reference for everything else.
+Commits are one file each, subject-only, present tense, sentence case — `Add target sum`,
+`Update word break`, `Rename lowest common ancestor` — with no trailers. `.claude/commands/commit.md`
+(the `/commit` command) is the authoritative spec.
